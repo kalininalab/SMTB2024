@@ -17,19 +17,11 @@ repos:
       - id: check-json
       - id: check-merge-conflict
       - id: check-case-conflict
-  - repo: https://github.com/timothycrosley/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-  - repo: https://github.com/ambv/black
-    rev: 24.4.2
-    hooks:
-      - id: black
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.5.5
     hooks:
       - id: ruff
-        args: [ --fix ]
+        args: [ --fix, --extend-select, I, --show-fixes ]
       - id: ruff-format
 
 
