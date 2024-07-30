@@ -12,7 +12,7 @@ Then press "ENTER" and wait until the download is complete. Now you have a folde
 
 ## How to set up Python
 
-On the Jupyter Server, Python and Conda are already installed. You can install all packages you need for the lab by 
+On the Jupyter Server, Python and Conda are already installed. You can install all packages you need for the lab by
 running the following in your terminal:
 
 ````bash
@@ -28,7 +28,7 @@ A list of package can be found here: [https://pypi.org/](https://pypi.org/).
 
 ## Working with git:
 
-Git is a Version Control System (VCS) that allows you to keep track of changes in your code. You can use it to 
+Git is a Version Control System (VCS) that allows you to keep track of changes in your code. You can use it to
 collaborate with others. The two main actions are updating your local repository and updating the online repository.
 
 ### Updating your local repository
@@ -41,7 +41,7 @@ git pull
 
 ### Updating the online repository
 
-To update the online repository, you need to commit your changes and push them to the online repository. You can do 
+To update the online repository, you need to commit your changes and push them to the online repository. You can do
 this by running:
 
 ````bash
@@ -50,4 +50,4 @@ git commit -m "Your commit message"
 git push
 ````
 
-If your have problems, questions, or feel unsafe, please ask one of the faculty members for help. 
+If your have problems, questions, or feel unsafe, please ask one of the faculty members for help.

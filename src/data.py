@@ -44,10 +44,10 @@ class ESMEmbedder:
         self.model.eval().to(self.device)
 
     def run(
-            self,
-            data: list[str],
-            layers: list[int] | None = None,
-            contacts: bool = False,
+        self,
+        data: list[str],
+        layers: list[int] | None = None,
+        contacts: bool = False,
     ) -> list[dict[Any, dict[Any, Any] | Any]]:
         """
         Compute the embeddings from one ESM Model for the given protein sequences.

@@ -1,0 +1,22 @@
+[tool.black]
+line-length = 119
+target-version = ['py39', 'py310', 'py311']
+include = '\.pyi?$'
+
+
+[tool.isort]
+profile = "black"
+line_length = 119
+
+[tool.ruff]
+# Core Settings
+target-version = "py311"    # Adjust to your project's Python version
+line-length = 119            # Common standard, adjust if desired
+fix = true                  # Let Ruff auto-fix some issues
+lint.select = [
+    "E",                     # pycodestyle errors
+    "F",                     # pyflakes errors
+    "W",                     # Common warnings
+    "B",                     # Bugbear for trickier issues
+]
+lint.ignore = ["E501"]

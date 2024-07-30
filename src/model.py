@@ -1,6 +1,6 @@
-import torch.nn.functional as F
 import pytorch_lightning as pl
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import torchmetrics as M
 from torch.optim.lr_scheduler import ReduceLROnPlateau
