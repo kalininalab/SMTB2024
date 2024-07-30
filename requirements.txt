@@ -6,3 +6,4 @@ jsonargparse
 wandb
 tokenizers
 transformers
+beartype
