@@ -11,7 +11,7 @@ from tokenizers.trainers import BpeTrainer, UnigramTrainer, WordLevelTrainer, Wo
 # ! Current Data for token is AI
 
 
-def BPE_Tokenizer(
+def bpe_tokenizer(
     training_directory: str = "data/training/",
     output_file_directory: str = "data/BPE_tokenizer.json",
 ) -> PreTrainedTokenizerFast:
@@ -34,7 +34,7 @@ def BPE_Tokenizer(
     return tokenizer
 
 
-def WordPiece_Tokenizer(
+def wordpiece_tokenizer(
     training_directory: str = "data/training/",
     output_file_directory: str = "data/wordpiece_tokenizer.json",
 ) -> PreTrainedTokenizerFast:
@@ -55,7 +55,7 @@ def WordPiece_Tokenizer(
     return tokenizer
 
 
-def Unigram_Tokenizer(
+def unigram_tokenizer(
     training_directory: str = "data/training/",
     output_file_directory: str = "data/unigram_tokenizer.json",
 ) -> PreTrainedTokenizerFast:
@@ -78,7 +78,7 @@ def Unigram_Tokenizer(
     return tokenizer
 
 
-def WordLevel_Tokenizer(
+def wordlevel_tokenizer(
     training_directory: str = "data/training/",
     output_file_directory: str = "data/wordlevel_tokenizer.json",
 ) -> PreTrainedTokenizerFast:
