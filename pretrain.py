@@ -1,6 +1,6 @@
 import argparse
 
-from src.tokenizers import bpe_tokenizer, unigram_tokenizer, wordlevel_tokenizer, wordpiece_tokenizer
+from src.tokenizers import train_tokenizer
 
 parser = argparse.ArgumentParser(description="Pretrain a model")
 parser.add_argument("--data", type=str, help=".txt file containing the data")
@@ -23,10 +23,8 @@ dataset = ...
 # ! Multiple Possible Tokenizers
 # TODO: Find the best tokenizer
 
-bpe_tokenizer_trained = bpe_tokenizer()
-unigram_tokenizer_trained = unigram_tokenizer()
-wordlevel_tokenizer_trained = wordlevel_tokenizer()
-wordpiece_tokenizer_trained = wordpiece_tokenizer()
+# You can choose the tokenizer type, default is bpe
+tokenizer = train_tokenizer()
 
 
 ### TODO: Tokenize the dataset
