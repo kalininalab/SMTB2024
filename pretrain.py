@@ -1,5 +1,7 @@
 import argparse
+
 from datasets import load_dataset
+
 from src.tokenizers import train_tokenizer
 from transformers import PreTrainedTokenizerFast
 
