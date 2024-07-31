@@ -24,9 +24,9 @@ def train_tokenizer(
         )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
         tokenizer.pre_tokenizer = Whitespace()  # Necessary to avoid \n in tokens
     elif type == "wordpiece":
-        tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
+        tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))
 
-        trainer = BpeTrainer(
+        trainer = WordPieceTrainer(
             special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
         )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
     elif type == "unigram":
