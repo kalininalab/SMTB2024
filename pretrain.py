@@ -24,8 +24,7 @@ dataset = ...
 # TODO: Find the best tokenizer
 
 # You can choose the tokenizer type, default is bpe
-tokenizer = train_tokenizer()
-
+tokenizer = train_tokenizer(type=config.tokenizer, vocab_size=config.vocab_size)
 
 ### TODO: Tokenize the dataset
 
