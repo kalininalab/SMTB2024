@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 import esm
 import torch
@@ -24,7 +24,7 @@ class DownstreamDataset(Dataset):
 
 
 class ESMEmbedder:
-    def __init__(self, num_layers):
+    def __init__(self, num_layers: Literal[6, 12, 30, 33]):
         self.num_layers = num_layers
         self.models = {
             6: "esm2_t6_8M_UR50D",

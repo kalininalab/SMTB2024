@@ -1,4 +1,5 @@
 import pytorch_lightning as pl
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -18,10 +19,10 @@ class Model(pl.LightningModule):
             nn.LazyLinear(1),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x).squeeze(1)
 
-    def shared_step(self, batch, name: str = "train"):
+    def shared_step(self, batch: tuple[torch.Tensor, torch.Tensor], name: str = "train") -> torch.Tensor:
         x, y = batch
 
         # compute the prediction
@@ -39,13 +40,13 @@ class Model(pl.LightningModule):
         self.log(f"{name}/concord", M.functional.concordance_corrcoef(y_pred, y))
         return loss
 
-    def training_step(self, batch):
+    def training_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         return self.shared_step(batch, "train")
 
-    def validation_step(self, batch):
+    def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         return self.shared_step(batch, "val")
 
-    def test_step(self, batch):
+    def test_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         return self.shared_step(batch, "test")
 
     def configure_optimizers(self):
