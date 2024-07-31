@@ -1,8 +1,3 @@
-import os
-import sys
-from pathlib import Path
-
-import jsonargparse
 import torch
 import wandb
 from pytorch_lightning import Trainer, seed_everything
@@ -67,13 +62,14 @@ def train(
     )
 
     # initialize the model
-    model = Model(hidden_dim=hidden_dim, dropout=dropout, classification= True)
+    model = Model(hidden_dim=hidden_dim, dropout=dropout, classification=True)
 
     # look into the directory below
     datasets = []
-    for ds in ["train", "validation", "test"]:
-        p = Path(dataset) / model_name / ds
-        # datasets.append(train_validation_test(p, layer_num))
+    # TODO FIXME
+    # for ds in ["train", "validation", "test"]:
+    #     p = Path(dataset) / model_name / ds
+    #     datasets.append(train_validation_test(p, layer_num))
 
     train_dataset = DownstreamDataset(datasets[0][0], datasets[0][1])
     validation_dataset = DownstreamDataset(datasets[1][0], datasets[1][1])

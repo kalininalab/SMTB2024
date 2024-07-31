@@ -3,14 +3,12 @@ import pytorch_lightning as pl
 import torch.nn as nn
 import torch.optim as optim
 import torchmetrics as M
-from torchmetrics import *
 from typing import Literal
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class Model(pl.LightningModule):
-    def __init__(self, hidden_dim: int, dropout: float = 0.5, lr: float = 0.001, reduce_lr_patience: int = 50, 
-                 task = Literal["regression", "binary_classification", "multiclass_clasification"]): #you need to choose one of the tasks
+    def __init__(self, hidden_dim: int, task: Literal["regression", "binary_classification", "multiclass_clasification"], dropout: float = 0.5, lr: float = 0.001, reduce_lr_patience: int = 50): #you need to choose one of the tasks
         super().__init__()
         self.lr = lr
         self.reduce_lr_parience = reduce_lr_patience
@@ -28,18 +26,18 @@ class Model(pl.LightningModule):
             self.loss_fn = nn.CrossEntropyLoss()
         else:
             raise ValueError(f"Unsupported task: {task}")
-        self.metrics = get_metrics(self.task)
+        self.metrics = self.get_metrics(self.task)
 
     def forward(self, x):
         return self.model(x).squeeze(1)
 
-    def get_metrics(task = Literal["regression", "binary_classification", "multiclass_clasification"]):
+    def get_metrics(task: Literal["regression", "binary_classification", "multiclass_clasification"]):
         if task == "regression":
-            m = MetricCollection([R2Score(num_outputs=1), MeanSquaredError(), 
-                                  PearsonCorrCoef(), ConcordanceCorrCoef(), ExplainedVariance()])
+            m = M.MetricCollection([M.R2Score(num_outputs=1), M.MeanSquaredError(),
+                                  M.PearsonCorrCoef(), M.ConcordanceCorrCoef(), M.ExplainedVariance()])
         elif task == 'binary_classification':
-            m = MetricCollection([BinaryF1Score(), BinaryAUROC()])
-        return {"train" : m.clone(prefix='train/'), 'val' : m.clone(prefix = 'val/'), 'test' = m.clone(prefix = 'test')}
+            m = M.MetricCollection([M.BinaryF1Score(), M.BinaryAUROC()])
+        return {"train" : m.clone(prefix='train/'), 'val' : m.clone(prefix = 'val/'), 'test' : m.clone(prefix = 'test')}
 
     def shared_step(self, batch, name: str = "train"):
         x, y = batch
@@ -69,7 +67,7 @@ class Model(pl.LightningModule):
 
     def on_validation_epoch_end(self) -> None:
         self.share_end("val")
-        
+
     def on_test_epoch_end(self) -> None:
         self.shared_end("test")
 
