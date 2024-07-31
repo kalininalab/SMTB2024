@@ -1,9 +1,11 @@
 import argparse
 
+from datasets import load_dataset
+
 from src.tokenizers import train_tokenizer
 
 parser = argparse.ArgumentParser(description="Pretrain a model")
-parser.add_argument("--data", type=str, help=".txt file containing the data")
+parser.add_argument("--data", type=str, default="khairi/uniprot-swissprot", help="Name of data to be trained on")
 parser.add_argument("--tokenizer", default="bpe", type=str, choices=["char", "bpe"], help="Tokenizer to use")
 parser.add_argument("--vocab_size", default=5000, type=int, help="Vocabulary size")
 parser.add_argument("--n_layers", type=int, default=12, help="Number of layers in the model")
@@ -16,7 +18,7 @@ config = parser.parse_args()
 
 ## TODO: Load the dataset ##
 
-dataset = ...
+dataset = load_dataset(config.data)
 
 
 ### Train the tokenizer & Load the pretrained tokenizer
@@ -24,7 +26,7 @@ dataset = ...
 # TODO: Find the best tokenizer
 
 # You can choose the tokenizer type, default is bpe
-tokenizer = train_tokenizer(tokenization_type=config.tokenizer, vocab_size=config.vocab_size)
+tokenizer = train_tokenizer(dataset=dataset, tokenization_type=config.tokenizer, vocab_size=config.vocab_size)
 
 ### TODO: Tokenize the dataset
 
