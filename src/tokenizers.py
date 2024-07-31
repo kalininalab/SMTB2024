@@ -12,7 +12,7 @@ from transformers import PreTrainedTokenizerFast
 
 
 def train_tokenizer(
-    type: Literal["bpe", "wordpiece", "unigram", "wordlevel"],
+    tokenization_type: Literal["bpe", "wordpiece", "unigram", "wordlevel"] = "bpe",
     training_directory: str = "data/training/",
     output_file_directory: str = "data/tokenizer.json",
     vocab_size: int = 5000,
@@ -20,32 +20,22 @@ def train_tokenizer(
     if not (training_directory.endswith("/")):
         training_directory += "/"
 
-    if type == "bpe":
+    if tokenization_type == "bpe":
         tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
-
-        trainer = BpeTrainer(
-            special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
-        )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
-        tokenizer.pre_tokenizer = Whitespace()  # Necessary to avoid \n in tokens
-    elif type == "wordpiece":
+        trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size)
+    elif tokenization_type == "wordpiece":
         tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))
-
         trainer = WordPieceTrainer(
             special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
-        )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
-    elif type == "unigram":
+        )
+    elif tokenization_type == "unigram":
         tokenizer = Tokenizer(Unigram())
-
-        trainer = UnigramTrainer(
-            special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
-        )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
-
-    elif type == "wordlevel":
+        trainer = UnigramTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size)
+    elif tokenization_type == "wordlevel":
         tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
-
         trainer = WordLevelTrainer(
             special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
-        )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
+        )
 
     tokenizer.pre_tokenizer = Whitespace()  # Necessary to avoid \n in tokens
 
