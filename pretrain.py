@@ -1,6 +1,7 @@
 import argparse
 
 from datasets import load_dataset
+from transformers import DataCollatorForLanguageModeling, EsmConfig, TFEsmForMaskedLM
 
 from src.tokenizers import train_tokenizer
 
@@ -32,9 +33,16 @@ tokenizer = train_tokenizer(dataset=dataset, tokenization_type=config.tokenizer,
 
 ### TODO: Init the config and the model
 
-config = ...
-model = ...
-data_collator = ...
+esm_config = EsmConfig(
+    vocab_size=config.vocab_size,
+    num_hidden_layers=config.n_layers,
+    hidden_size=config.n_dims,
+    num_attention_heads=config.n_heads,
+)
+model = TFEsmForMaskedLM(
+    config=esm_config,
+)
+data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
 
 ### Setup trainer ###
 
