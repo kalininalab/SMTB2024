@@ -1,6 +1,6 @@
 import argparse
 
-from transformers import PreTrainedTokenizerFast
+from src.tokenizers import bpe_tokenizer, unigram_tokenizer, wordlevel_tokenizer, wordpiece_tokenizer
 
 parser = argparse.ArgumentParser(description="Pretrain a model")
 parser.add_argument("--data", type=str, help=".txt file containing the data")
@@ -14,31 +14,24 @@ parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
 config = parser.parse_args()
 
 
-## Load the dataset ##
+## TODO: Load the dataset ##
 
 dataset = ...
 
 
-### Train the tokenizer
+### Train the tokenizer & Load the pretrained tokenizer
+# ! Multiple Possible Tokenizers
+# TODO: Find the best tokenizer
+
+bpe_tokenizer_trained = bpe_tokenizer()
+unigram_tokenizer_trained = unigram_tokenizer()
+wordlevel_tokenizer_trained = wordlevel_tokenizer()
+wordpiece_tokenizer_trained = wordpiece_tokenizer()
 
 
-### Load the pretrained tokenizer
+### TODO: Tokenize the dataset
 
-
-tokenizer = PreTrainedTokenizerFast(
-    tokenizer_file=...,
-    mask_token="[MASK]",
-    pad_token="[PAD]",
-    cls_token="[CLS]",
-    sep_token="[SEP]",
-    unk_token="[UNK]",
-)
-
-
-### Tokenize the dataset
-
-
-### Init the config and the model
+### TODO: Init the config and the model
 
 config = ...
 model = ...
