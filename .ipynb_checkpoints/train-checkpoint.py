@@ -67,7 +67,7 @@ def train(
     )
 
     # initialize the model
-    model = Model(hidden_dim=hidden_dim, dropout=dropout, classification= True)
+    model = Model(hidden_dim=hidden_dim, dropout=dropout)
 
     # look into the directory below
     datasets = []
