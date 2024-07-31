@@ -14,6 +14,9 @@ parser.add_argument("--n_dims", type=int, default=480, help="Dimensions of the m
 parser.add_argument("--n_heads", type=int, default=16, help="Number of heads in the model")
 parser.add_argument("--epochs", type=int, default=100, help="Number of epochs to train")
 parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
+parser.add_argument(
+    "--output_dir", type=str, default="/scratch/output", help="Output directory for model and checkpoints"
+)
 config = parser.parse_args()
 
 
@@ -45,7 +48,7 @@ data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, m
 ### Setup trainer ###
 
 training_args = TrainingArguments(
-    output_dir="/scratch/output",
+    output_dir=config.output_dir,
     num_train_epochs=config.epochs,
     per_device_train_batch_size=config.batch_size,
 )
