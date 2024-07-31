@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 
 from tokenizers import Tokenizer
 from tokenizers.models import BPE, Unigram, WordLevel, WordPiece
@@ -10,84 +11,32 @@ from transformers import PreTrainedTokenizerFast
 # ! Current Data for token is AI
 
 
-def bpe_tokenizer(
+def train_tokenizer(
+    tokenization_type: Literal["bpe", "wordpiece", "unigram", "wordlevel"] = "bpe",
     training_directory: str = "data/training/",
-    output_file_directory: str = "data/BPE_tokenizer.json",
-) -> PreTrainedTokenizerFast:
+    output_file_directory: str = "data/tokenizer.json",
+    vocab_size: int = 5000,
+):
     if not (training_directory.endswith("/")):
         training_directory += "/"
 
-    tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
-    trainer = BpeTrainer(
-        special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
-    )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
-    tokenizer.pre_tokenizer = Whitespace()  # Necessary to avoid \n in tokens
+    if tokenization_type == "bpe":
+        tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
+        trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size)
+    elif tokenization_type == "wordpiece":
+        tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))
+        trainer = WordPieceTrainer(
+            special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
+        )
+    elif tokenization_type == "unigram":
+        tokenizer = Tokenizer(Unigram())
+        trainer = UnigramTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size)
+    elif tokenization_type == "wordlevel":
+        tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
+        trainer = WordLevelTrainer(
+            special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
+        )
 
-    files = [os.path.join(training_directory, file) for file in os.listdir(training_directory)]
-    tokenizer.train(files, trainer)
-
-    tokenizer.save(output_file_directory)  # Saves to token.json
-
-    tokenizer = PreTrainedTokenizerFast(tokenizer_file=output_file_directory)
-
-    return tokenizer
-
-
-def wordpiece_tokenizer(
-    training_directory: str = "data/training/",
-    output_file_directory: str = "data/wordpiece_tokenizer.json",
-) -> PreTrainedTokenizerFast:
-    if not (training_directory.endswith("/")):
-        training_directory += "/"
-
-    tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))
-    trainer = WordPieceTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"])
-    tokenizer.pre_tokenizer = Whitespace()
-
-    files = [os.path.join(training_directory, file) for file in os.listdir(training_directory)]
-    tokenizer.train(files, trainer)
-
-    tokenizer.save(output_file_directory)
-
-    tokenizer = PreTrainedTokenizerFast(tokenizer_file=output_file_directory)
-
-    return tokenizer
-
-
-def unigram_tokenizer(
-    training_directory: str = "data/training/",
-    output_file_directory: str = "data/unigram_tokenizer.json",
-) -> PreTrainedTokenizerFast:
-    if not (training_directory.endswith("/")):
-        training_directory += "/"
-
-    tokenizer = Tokenizer(Unigram())
-    trainer = UnigramTrainer(
-        special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
-    )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
-    tokenizer.pre_tokenizer = Whitespace()  # Necessary to avoid \n in tokens
-
-    files = [os.path.join(training_directory, file) for file in os.listdir(training_directory)]
-    tokenizer.train(files, trainer)
-
-    tokenizer.save(output_file_directory)  # Saves to token.json
-
-    tokenizer = PreTrainedTokenizerFast(tokenizer_file=output_file_directory)
-
-    return tokenizer
-
-
-def wordlevel_tokenizer(
-    training_directory: str = "data/training/",
-    output_file_directory: str = "data/wordlevel_tokenizer.json",
-) -> PreTrainedTokenizerFast:
-    if not (training_directory.endswith("/")):
-        training_directory += "/"
-
-    tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
-    trainer = WordLevelTrainer(
-        special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
-    )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
     tokenizer.pre_tokenizer = Whitespace()  # Necessary to avoid \n in tokens
 
     files = [os.path.join(training_directory, file) for file in os.listdir(training_directory)]
