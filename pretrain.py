@@ -1,7 +1,7 @@
 import argparse
 
 from datasets import load_dataset
-from transformers import DataCollatorForLanguageModeling, EsmConfig, TFEsmForMaskedLM
+from transformers import DataCollatorForLanguageModeling, EsmConfig, TFEsmForMaskedLM, Trainer, TrainingArguments
 
 from src.tokenizers import train_tokenizer
 
@@ -22,16 +22,14 @@ config = parser.parse_args()
 dataset = load_dataset(config.data)
 
 
-### Train the tokenizer & Load the pretrained tokenizer
+### Train the tokenizer & Load the pretrained tokenizer ###
 # ! Multiple Possible Tokenizers
 # TODO: Find the best tokenizer
 
 # You can choose the tokenizer type, default is bpe
 tokenizer = train_tokenizer(dataset=dataset, tokenization_type=config.tokenizer, vocab_size=config.vocab_size)
 
-### TODO: Tokenize the dataset
-
-### TODO: Init the config and the model
+### Setup Model ###
 
 esm_config = EsmConfig(
     vocab_size=config.vocab_size,
@@ -46,6 +44,19 @@ data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, m
 
 ### Setup trainer ###
 
-training_args = ...
-trainer = ...
+training_args = TrainingArguments(
+    output_dir="/scratch/output",
+    num_train_epochs=config.epochs,
+    per_device_train_batch_size=config.batch_size,
+)
+
+#! Using swissprot (Small DB)
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    data_collator=data_collator,
+    tokenizer=tokenizer,
+    training_dataset=dataset["train"]["sequence"],
+    eval_dataset=dataset["validation"]["sequence"],
+)
 trainer.train()
