@@ -1,9 +1,9 @@
 import argparse
 
 from datasets import load_dataset
+from transformers import PreTrainedTokenizerFast
 
 from src.tokenizers import train_tokenizer
-from transformers import PreTrainedTokenizerFast
 
 parser = argparse.ArgumentParser(description="Pretrain a model")
 parser.add_argument("--data", type=str, default="khairi/uniprot-swissprot", help="Name of data to be trained on")
@@ -22,9 +22,11 @@ dataset = load_dataset(config.data)
 # Train the tokenizer
 tokenizer = train_tokenizer(dataset=dataset, tokenization_type=config.tokenizer, vocab_size=config.vocab_size)
 
+
 def tokenize_function(examples):
     tokens = tokenizer.encode_batch(examples["text"])
     return {"ids": [t.ids for t in tokens]}
+
 
 # Apply the tokenization function to the dataset
 dataset = dataset.map(tokenize_function, batched=True)
