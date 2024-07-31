@@ -1,12 +1,6 @@
 [tool.ruff]
-# Core Settings
-target-version = "py311"    # Adjust to your project's Python version
-line-length = 119            # Common standard, adjust if desired
-fix = true                  # Let Ruff auto-fix some issues
-lint.select = [
-    "E",                     # pycodestyle errors
-    "F",                     # pyflakes errors
-    "W",                     # Common warnings
-    "B",                     # Bugbear for trickier issues
-]
+target-version = "py311"
+line-length = 119
+fix = true
+lint.select = ["E","F","W","B"]
 lint.ignore = ["E501"]
