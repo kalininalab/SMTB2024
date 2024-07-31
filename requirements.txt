@@ -4,4 +4,6 @@ torchmetrics
 fair-esm
 jsonargparse
 wandb
-
+tokenizers
+transformers
+beartype

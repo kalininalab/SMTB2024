@@ -1,6 +1,7 @@
-import torch.nn.functional as F
 import pytorch_lightning as pl
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import torchmetrics as M
 from torch.optim.lr_scheduler import ReduceLROnPlateau
@@ -26,7 +27,7 @@ class Model(pl.LightningModule):
         elif self.task == "regression":
             return self.model(x).squeeze(1)
 
-    def shared_step(self, batch, name: str = "train"):
+    def shared_step(self, batch: tuple[torch.Tensor, torch.Tensor], name: str = "train") -> torch.Tensor:
         x, y = batch
 
         # compute the prediction
@@ -63,13 +64,13 @@ class Model(pl.LightningModule):
         
         return loss
 
-    def training_step(self, batch):
+    def training_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         return self.shared_step(batch, "train")
 
-    def validation_step(self, batch):
+    def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         return self.shared_step(batch, "val")
 
-    def test_step(self, batch):
+    def test_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         return self.shared_step(batch, "test")
 
     def configure_optimizers(self):

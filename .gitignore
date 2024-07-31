@@ -1,1 +1,13 @@
 .idea/
+.*
+!.gitignore
+!.pre-commit-config.yaml
+__*__
+*.pyc
+*.txt
+*.fasta
+data/*
+*.csv
+*.ipynb_checkpoints
+*.html
+*.json
