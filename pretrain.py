@@ -2,6 +2,8 @@ import argparse
 
 from transformers import PreTrainedTokenizerFast
 
+import pandas as pd
+
 parser = argparse.ArgumentParser(description="Pretrain a model")
 parser.add_argument("--data", type=str, help=".txt file containing the data")
 parser.add_argument("--tokenizer", type=str, choices=["char", "bpe"], help="Tokenizer to use")
