@@ -7,7 +7,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class Model(pl.LightningModule):
-    def __init__(self, hidden_dim: int, dropout: float = 0.5, lr: float = 0.001, reduce_lr_patience: int = 50):
+    def __init__(self, hidden_dim, num_of_classes: int, dropout: float = 0.5, lr: float = 0.001, reduce_lr_patience: int = 50, task = "regression"):
         super().__init__()
         self.lr = lr
         self.reduce_lr_parience = reduce_lr_patience
@@ -15,28 +15,52 @@ class Model(pl.LightningModule):
             nn.LazyLinear(hidden_dim),
             nn.ReLU(),
             nn.Dropout(p=dropout),
-            nn.LazyLinear(1),
+            nn.LazyLinear(num_of_classes),
         )
 
     def forward(self, x):
-        return self.model(x).squeeze(1)
+        if self.task == "multiclass":
+            return self.model(x)
+        elif self.task == "binar":
+            pass
+        elif self.task == "regression":
+            return self.model(x).squeeze(1)
 
     def shared_step(self, batch, name: str = "train"):
         x, y = batch
 
         # compute the prediction
-        y_pred = self.forward(x).float()
+        
+        y_pred = self.forward(x)
         y = y.float()
 
         # compute the loss
-        loss = F.mse_loss(y_pred, y)
+        if self.task == "multiclass":
+            loss =  F.cross_entropy(y_pred, y)
+        elif self.task == "binar":
+            pass
+        elif self.task == "regression":
+            y_pred = self.forward(x).float()
 
         # compute and log the metrics
         self.log(f"{name}/loss", loss)
-        self.log(f"{name}/r2", M.functional.r2_score(y_pred, y))
-        self.log(f"{name}/pearson", M.functional.pearson_corrcoef(y_pred, y))
-        self.log(f"{name}/expvar", M.functional.explained_variance(y_pred, y))
-        self.log(f"{name}/concord", M.functional.concordance_corrcoef(y_pred, y))
+
+        if self.task == "multiclass":
+            precision = M.classification.Precision(num_classes=self.num_of_classes, average='macro')
+            recall = M.classification.Recall(num_classes=self.num_of_classes, average='macro')
+            f1_score = M.classification.F1(num_classes=self.num_of_classes, average='macro')
+
+            self.log(f"{name}/prec", precision)
+            self.log(f"{name}/rec", recall)
+            self.log(f"{name}/F1", f1_score)
+        elif self.task == "binar":
+            pass
+        elif self.task == "regression":
+            self.log(f"{name}/r2", M.functional.r2_score(y_pred, y))
+            self.log(f"{name}/pearson", M.functional.pearson_corrcoef(y_pred, y))
+            self.log(f"{name}/expvar", M.functional.explained_variance(y_pred, y))
+            self.log(f"{name}/concord", M.functional.concordance_corrcoef(y_pred, y))
+        
         return loss
 
     def training_step(self, batch):
