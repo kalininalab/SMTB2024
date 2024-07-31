@@ -1,8 +1,7 @@
 import argparse
-
 from datasets import load_dataset
-
 from src.tokenizers import train_tokenizer
+from transformers import PreTrainedTokenizerFast
 
 parser = argparse.ArgumentParser(description="Pretrain a model")
 parser.add_argument("--data", type=str, default="khairi/uniprot-swissprot", help="Name of data to be trained on")
@@ -15,29 +14,35 @@ parser.add_argument("--epochs", type=int, default=100, help="Number of epochs to
 parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
 config = parser.parse_args()
 
-
-## TODO: Load the dataset ##
-
+# Load the dataset
 dataset = load_dataset(config.data)
 
-
-### Train the tokenizer & Load the pretrained tokenizer
-# ! Multiple Possible Tokenizers
-# TODO: Find the best tokenizer
-
-# You can choose the tokenizer type, default is bpe
+# Train the tokenizer
 tokenizer = train_tokenizer(dataset=dataset, tokenization_type=config.tokenizer, vocab_size=config.vocab_size)
 
-### TODO: Tokenize the dataset
+def tokenize_function(examples):
+    tokens = tokenizer.encode_batch(examples["text"])
+    return {"ids": [t.ids for t in tokens]}
 
-### TODO: Init the config and the model
+# Apply the tokenization function to the dataset
+dataset = dataset.map(tokenize_function, batched=True)
 
+# Load the pretrained tokenizer
+tokenizer = PreTrainedTokenizerFast(
+    tokenizer_file=...,
+    mask_token="[MASK]",
+    pad_token="[PAD]",
+    cls_token="[CLS]",
+    sep_token="[SEP]",
+    unk_token="[UNK]",
+)
+
+# Initialize the config and model
 config = ...
 model = ...
 data_collator = ...
 
-### Setup trainer ###
-
+# Setup trainer
 training_args = ...
 trainer = ...
 trainer.train()
