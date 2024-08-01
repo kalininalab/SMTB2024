@@ -32,7 +32,7 @@ def train(
     logger = WandbLogger(
         log_model=True,
         project=dataset.split("/")[-1],
-        entity="smtb2023",
+        entity="smtb2024",
         name=f"{model_name.split('_')[1]}_{layer_num:02d}",
         config={
             "model_name": model_name,
@@ -62,7 +62,7 @@ def train(
     )
 
     # initialize the model
-    model = Model(hidden_dim=hidden_dim, dropout=dropout)
+    model = Model(hidden_dim=hidden_dim, dropout=dropout, classification=True)
 
     # look into the directory below
     datasets = []

@@ -1,22 +1,14 @@
-from typing import Literal
-
+import torch.nn.functional as F
 import pytorch_lightning as pl
 import torch.nn as nn
 import torch.optim as optim
 import torchmetrics as M
+from typing import Literal
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class Model(pl.LightningModule):
-    def __init__(
-        self,
-        hidden_dim: int,
-        num_of_classes: int,
-        task: Literal["regression", "binary_classification", "multiclass_classification"],
-        dropout: float = 0.5,
-        lr: float = 0.001,
-        reduce_lr_patience: int = 50,
-    ):  # you need to choose one of the tasks
+    def __init__(self, hidden_dim: int, task: Literal["regression", "binary_classification", "multiclass_clasification"], dropout: float = 0.5, lr: float = 0.001, reduce_lr_patience: int = 50): #you need to choose one of the tasks
         super().__init__()
         self.lr = lr
         self.reduce_lr_parience = reduce_lr_patience
@@ -24,7 +16,7 @@ class Model(pl.LightningModule):
             nn.LazyLinear(hidden_dim),
             nn.ReLU(),
             nn.Dropout(p=dropout),
-            nn.LazyLinear(num_of_classes),
+            nn.LazyLinear(1),
         )
         if task == "binary_classification":
             self.loss_fn = nn.BCEWithLogitsLoss()
@@ -32,34 +24,20 @@ class Model(pl.LightningModule):
             self.loss_fn = nn.MSELoss()
         elif task == "multiclass_classification":
             self.loss_fn = nn.CrossEntropyLoss()
-
+        else:
+            raise ValueError(f"Unsupported task: {task}")
         self.metrics = self.get_metrics(self.task)
 
     def forward(self, x):
-        return self.model(x).squeeze()
+        return self.model(x).squeeze(1)
 
-    def get_metrics(self):
-        if self.task == "regression":
-            m = M.MetricCollection(
-                [
-                    M.R2Score(num_outputs=1),
-                    M.MeanSquaredError(),
-                    M.PearsonCorrCoef(),
-                    M.ConcordanceCorrCoef(),
-                    M.ExplainedVariance(),
-                ]
-            )
-        elif self.task == "binary_classification":
+    def get_metrics(task: Literal["regression", "binary_classification", "multiclass_clasification"]):
+        if task == "regression":
+            m = M.MetricCollection([M.R2Score(num_outputs=1), M.MeanSquaredError(),
+                                  M.PearsonCorrCoef(), M.ConcordanceCorrCoef(), M.ExplainedVariance()])
+        elif task == 'binary_classification':
             m = M.MetricCollection([M.BinaryF1Score(), M.BinaryAUROC()])
-        elif self.task == "multiclass_clasification":
-            m = M.MetricCollection(
-                [
-                    M.classification.Precision(num_classes=self.num_of_classes, average="macro"),
-                    M.classification.Recall(num_classes=self.num_of_classes, average="macro"),
-                    M.classification.F1(num_classes=self.num_of_classes, average="macro"),
-                ]
-            )
-        return {"train": m.clone(prefix="train/"), "val": m.clone(prefix="val/"), "test": m.clone(prefix="test/")}
+        return {"train" : m.clone(prefix='train/'), 'val' : m.clone(prefix = 'val/'), 'test' : m.clone(prefix = 'test')}
 
     def shared_step(self, batch, name: str = "train"):
         x, y = batch
@@ -79,7 +57,7 @@ class Model(pl.LightningModule):
     def test_step(self, batch):
         return self.shared_step(batch, "test")
 
-    def shared_end(self, stage: "str"):
+    def shared_end(self, stage : 'str'):
         metrics = self.metrics[stage].compute()
         self.log_dict(metrics)
         self.metrics[stage].reset()
