@@ -17,6 +17,12 @@ parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
 parser.add_argument(
     "--output_dir", type=str, default="/scratch/output", help="Output directory for model and checkpoints"
 )
+parser.add_argument(
+    "--token_output_file",
+    type=str,
+    default="/scratch/output/tokenizer/tokenizer.json",
+    help="Where the tokenizer json file will be saved",
+)
 config = parser.parse_args()
 
 
@@ -30,7 +36,12 @@ dataset = load_dataset(config.data)
 # TODO: Find the best tokenizer
 
 # You can choose the tokenizer type, default is bpe
-tokenizer = train_tokenizer(dataset=dataset, tokenization_type=config.tokenizer, vocab_size=config.vocab_size)
+tokenizer = train_tokenizer(
+    dataset=dataset,
+    tokenization_type=config.tokenizer,
+    vocab_size=config.vocab_size,
+    output_file_directory=config.token_output_file,
+)
 
 
 ### Tokenize the dataset
