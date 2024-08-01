@@ -75,19 +75,30 @@ class ESMEmbedder:
         return results
 
 
-class DataRead:
-    def get_protlist(df):
-        data = pd.read_csv(df)
-        prot_list = []
-        d_dict = data.to_dict(orient="index")
-        for key in d_dict.keys():
-            n = d_dict[key][list(d_dict[key].keys())[0]]
-            prot_list.append(n)
-        return prot_list
+def get_protlist(df):
+    data = pd.read_csv(df)
+    prot_list = []
+    d_dict = data.to_dict(orient="index")
+    for key in d_dict.keys():
+        n = d_dict[key][list(d_dict[key].keys())[0]]
+        prot_list.append(n)
+    return prot_list
 
-    def embeddings_to_dataset(dataframe, embeddings, layer):
-        labels = list(dataframe[dataframe.columns[1]])
-        embedd_list = []
-        for i in range(len(embeddings)):
-            embedd_list.append(embeddings[i]["representations"][layer])
-        return DownstreamDataset(embedd_list, labels)
+
+def embeddings_to_dataset(dataframe, embeddings, layer):
+    labels = list(dataframe[dataframe.columns[1]])
+    embedd_list = []
+    for i in range(len(embeddings)):
+        embedd_list.append(embeddings[i]["representations"][layer].mean([0, 1]))
+    return DownstreamDataset(embedd_list, labels)
+
+
+def load_dataset(path, nlayers):
+    df = pd.read_csv(path)
+    protlist = get_protlist(path)
+    protlist_emb = ESMEmbedder(nlayers).run(protlist)
+    dataset_list = []
+    for i in range(nlayers):
+        df_embedded = embeddings_to_dataset(df, protlist_emb, i)
+        dataset_list.append(df_embedded)
+    return dataset_list

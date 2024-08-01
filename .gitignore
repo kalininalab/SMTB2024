@@ -8,6 +8,7 @@ __*__
 *.fasta
 data/*
 *.csv
-*.ipynb_checkpoints
+.ipynb_checkpoints/
+*.ipynb
 *.html
 *.json
