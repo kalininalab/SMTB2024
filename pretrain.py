@@ -6,7 +6,7 @@ from transformers import DataCollatorForLanguageModeling, EsmConfig, EsmForMaske
 from src.tokenization import train_tokenizer
 
 
-def main():
+def pretrain():
     parser = argparse.ArgumentParser(description="Pretrain a model")
     parser.add_argument("--data", type=str, default="khairi/uniprot-swissprot", help="Name of data to be trained on")
     parser.add_argument("--tokenizer", default="bpe", type=str, choices=["char", "bpe"], help="Tokenizer to use")
@@ -78,4 +78,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    pretrain()
