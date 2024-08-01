@@ -32,6 +32,7 @@ dataset = load_dataset(config.data)
 # You can choose the tokenizer type, default is bpe
 tokenizer = train_tokenizer(dataset=dataset, tokenization_type=config.tokenizer, vocab_size=config.vocab_size)
 
+
 ### Tokenize the dataset
 def tokenize_function(examples: dict) -> list[list[int]]:
     tokens = tokenizer.encode_batch(examples["text"])
