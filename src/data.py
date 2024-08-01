@@ -1,11 +1,10 @@
 from typing import Any, Literal
 
-import pandas as pd
 import esm
+import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
-
 
 
 class DownstreamDataset(Dataset):
@@ -62,7 +61,7 @@ class ESMEmbedder:
             layers = range(self.num_layers + 1)
         results = []
         for prot in tqdm(data):
-            batch_labels, batch_strs, batch_tokens = self.batch_converter([('alper', prot)])
+            batch_labels, batch_strs, batch_tokens = self.batch_converter([("alper", prot)])
             batch_tokens = batch_tokens.to(self.device)  # Ensure tokens are on the GPU
             with torch.no_grad():
                 i = self.model.forward(batch_tokens, repr_layers=layers, return_contacts=contacts)
@@ -75,11 +74,12 @@ class ESMEmbedder:
                 results.append(detached_i)
         return results
 
+
 class DataRead:
     def get_protlist(df):
         data = pd.read_csv(df)
         prot_list = []
-        d_dict = data.to_dict(orient='index')
+        d_dict = data.to_dict(orient="index")
         for key in d_dict.keys():
             n = d_dict[key][list(d_dict[key].keys())[0]]
             prot_list.append(n)
@@ -89,5 +89,5 @@ class DataRead:
         labels = list(dataframe[dataframe.columns[1]])
         embedd_list = []
         for i in range(len(embeddings)):
-            embedd_list.append(embeddings[i]['representations'][layer])
+            embedd_list.append(embeddings[i]["representations"][layer])
         return DownstreamDataset(embedd_list, labels)
