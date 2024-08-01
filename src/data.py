@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-
+import pandas as pd
 import esm
 import torch
 from torch.utils.data import Dataset
@@ -81,8 +81,8 @@ class DataRead:
         prot_list = []
         d_dict = data.to_dict(orient='index')
         for key in d_dict.keys():
-                n = d_dict[key][d_dict[key].keys()[0]]
-                prot_list.append(n)
+            n = d_dict[key][list(d_dict[key].keys())[0]]
+            prot_list.append(n)
         return prot_list
 
     def embeddings_to_dataset(dataframe, embeddings, layer):
