@@ -1,11 +1,12 @@
 import torch
-import wandb
+
+# import wandb
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, RichModelSummary, RichProgressBar
 from pytorch_lightning.loggers import WandbLogger
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 
-from src.data import DownstreamDataset
+from src.data import DownstreamDataset, load_dataset
 from src.model import Model
 
 # technical setting to make sure, parallelization works if multiple models are trained in parallel
@@ -13,13 +14,13 @@ torch.multiprocessing.set_sharing_strategy("file_system")
 
 
 def train(
+    dataset: DownstreamDataset,
     model_name: str,
     layer_num: int,
     hidden_dim: int = 512,
     batch_size: int = 1024,
     max_epoch: int = 200,
     dropout: float = 0.2,
-    dataset: str = "/shared/stability",
     early_stopping_patience: int = 30,
     lr: float = 0.001,
     reduce_lr_patience: int = 30,
@@ -64,20 +65,11 @@ def train(
     # initialize the model
     model = Model(hidden_dim=hidden_dim, dropout=dropout)
 
-    # look into the directory below
-    datasets = []
-    # TODO FIXME
-    # for ds in ["train", "validation", "test"]:
-    #     p = Path(dataset) / model_name / ds
-    #     datasets.append(train_validation_test(p, layer_num))
+    train, val, test = random_split(dataset, [0.7, 0.2, 0.1])
 
-    train_dataset = DownstreamDataset(datasets[0][0], datasets[0][1])
-    validation_dataset = DownstreamDataset(datasets[1][0], datasets[1][1])
-    test_dataset = DownstreamDataset(datasets[2][0], datasets[2][1])
-
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size)
-    test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
+    train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=True)
+    validation_dataloader = DataLoader(val, batch_size=batch_size)
+    test_dataloader = DataLoader(test, batch_size=batch_size)
 
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=validation_dataloader)
 
@@ -122,10 +114,10 @@ def run(
         seed (int, optional): Seed for reproducibility. Defaults to 42.
     """
     model_name = model_names[num_layers]
-    for layer in range(num_layers + 1):
+    for dataset in load_dataset("/scratch/alice_datasets/stability.csv", 6):
         train(
             model_name,
-            layer,
+            dataset,
             hidden_dim,
             batch_size,
             max_epoch,
@@ -136,7 +128,9 @@ def run(
             reduce_lr_patience,
             seed,
         )
-        wandb.finish()
+
+
+#       wandb.finish()
 
 
 if __name__ == "__main__":
