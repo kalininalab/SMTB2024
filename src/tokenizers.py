@@ -1,6 +1,6 @@
-import os
 from typing import Literal
 
+from datasets import Dataset, DatasetDict
 from tokenizers import Tokenizer
 from tokenizers.models import BPE, Unigram, WordLevel, WordPiece
 from tokenizers.pre_tokenizers import Whitespace
@@ -12,45 +12,31 @@ from transformers import PreTrainedTokenizerFast
 
 
 def train_tokenizer(
-    type: Literal["bpe", "wordpiece", "unigram", "wordlevel"],
-    training_directory: str = "data/training/",
+    dataset: Dataset | DatasetDict,
+    tokenization_type: Literal["bpe", "wordpiece", "unigram", "wordlevel"] = "bpe",
     output_file_directory: str = "data/tokenizer.json",
     vocab_size: int = 5000,
 ):
-    if not (training_directory.endswith("/")):
-        training_directory += "/"
-
-    if type == "bpe":
+    if tokenization_type == "bpe":
         tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
-
-        trainer = BpeTrainer(
-            special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
-        )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
-        tokenizer.pre_tokenizer = Whitespace()  # Necessary to avoid \n in tokens
-    elif type == "wordpiece":
+        trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size)
+    elif tokenization_type == "wordpiece":
         tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))
-
         trainer = WordPieceTrainer(
             special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
-        )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
-    elif type == "unigram":
+        )
+    elif tokenization_type == "unigram":
         tokenizer = Tokenizer(Unigram())
-
-        trainer = UnigramTrainer(
-            special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
-        )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
-
-    elif type == "wordlevel":
+        trainer = UnigramTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size)
+    elif tokenization_type == "wordlevel":
         tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
-
         trainer = WordLevelTrainer(
             special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
-        )  # Adds other tokens like unknown, padding, mask, and other post processing tokens
+        )
 
     tokenizer.pre_tokenizer = Whitespace()  # Necessary to avoid \n in tokens
 
-    files = [os.path.join(training_directory, file) for file in os.listdir(training_directory)]
-    tokenizer.train(files, trainer)
+    tokenizer.train_from_iterator(iterator=dataset["train"]["Sequence"], trainer=trainer)
 
     tokenizer.save(output_file_directory)  # Saves to token.json
 
