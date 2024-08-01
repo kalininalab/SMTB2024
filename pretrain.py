@@ -1,93 +1,46 @@
-import argparse
-import os
-
 from datasets import load_dataset
 from transformers import DataCollatorForLanguageModeling, EsmConfig, EsmForMaskedLM, Trainer, TrainingArguments
 
 from src.tokenization import train_tokenizer
 
-parser = argparse.ArgumentParser(description="Pretrain a model")
-parser.add_argument("--data", type=str, default="khairi/uniprot-swissprot", help="Name of data to be trained on")
-parser.add_argument("--tokenizer", default="bpe", type=str, choices=["char", "bpe"], help="Tokenizer to use")
-parser.add_argument("--vocab_size", default=5000, type=int, help="Vocabulary size")
-parser.add_argument("--n_layers", type=int, default=12, help="Number of layers in the model")
-parser.add_argument("--n_dims", type=int, default=480, help="Dimensions of the model")
-parser.add_argument("--n_heads", type=int, default=16, help="Number of heads in the model")
-parser.add_argument("--epochs", type=int, default=100, help="Number of epochs to train")
-parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
-parser.add_argument(
-    "--output_dir", type=str, default="/scratch/output", help="Output directory for model and checkpoints"
-)
-config = parser.parse_args()
+dataset = load_dataset("khairi/uniprot-swissprot", split="train[:10%]+validation[:10%]+test[:10%]")
+# Replace with your file path
 
-if not os.path.exists(config.output_dir):
-    os.makedirs(config.output_dir)
+tokenizer = train_tokenizer(dataset["train"]["text"], vocab_size=50)
+tokenizer.mask_token = "[MASK]"
+tokenizer.pad_token = "[PAD]"
+
+tokenized_datasets = dataset.map(lambda x: tokenizer(x["Sequence"]), batched=True, num_proc=4, remove_columns=["text"])
 
 
-os.environ["TOKENIZERS_PARALLELISM"] = "true"
-
-
-## Load the dataset ##
-
-dataset = load_dataset(config.data)
-
-
-### Train the tokenizer & Load the pretrained tokenizer ###
-# ! Multiple Possible Tokenizers
-# TODO: Find the best tokenizer
-
-# You can choose the tokenizer type, default is bpe
-tokenizer = train_tokenizer(
-    dataset=dataset,
-    tokenization_type=config.tokenizer,
-    vocab_size=config.vocab_size,
-    out_dir=config.output_dir,
+config = EsmConfig(
+    vocab_size=5000,  # Same as vocab size you used for the tokenizer
+    hidden_size=128,
+    num_hidden_layers=6,
+    num_attention_heads=4,
+    max_position_embeddings=512,
+    pad_token_id=0,
+    mask_token_id=1,
 )
 
-
-### Tokenize the dataset
-def tokenize_function(examples: dict) -> list[list[int]]:
-    return tokenizer(examples["Sequence"])
-
-
-# Apply the tokenization function to the dataset
-tokenized_dataset = dataset.map(
-    tokenize_function, batched=True, remove_columns=["Sequence", "__index_level_0__", "EntryID"]
-)
-
-### Setup Model ###
-
-esm_config = EsmConfig(
-    vocab_size=config.vocab_size,
-    num_hidden_layers=config.n_layers,
-    hidden_size=config.n_dims,
-    num_attention_heads=config.n_heads,
-)
-
-model = EsmForMaskedLM(
-    config=esm_config,
-)
-data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
-
-### Setup trainer ###
+model = EsmForMaskedLM(config=config)
+data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15, pad_to_multiple_of=512)
 
 training_args = TrainingArguments(
-    output_dir=config.output_dir,
-    num_train_epochs=config.epochs,
-    per_device_train_batch_size=config.batch_size,
+    output_dir="./esm-from-scratch",
+    overwrite_output_dir=True,
+    num_train_epochs=3,
+    per_device_train_batch_size=64,
+    save_steps=10_000,
+    save_total_limit=2,
+    no_cuda=True,
 )
 
-#! Using swissprot (Small DB)
-# The dataset is composed of multiple files: test.parquet, train.parquet, and valid.parquet each composed of different sequences. The function/library I'm using (datasets.load_dataset) parses it into different attributes in a class. You can get them by fetching train, test, or valid.
-
-# In addition, each file is composed of different columns, the one we need being sequence which is why we narrow down our search to it.
-# About the structure: https://chatgpt.com/share/488dafd8-f8a9-4280-8a07-d7661273af8e
 trainer = Trainer(
     model=model,
     args=training_args,
     data_collator=data_collator,
-    tokenizer=tokenizer,
-    train_dataset=dataset["train"],
-    eval_dataset=dataset["validation"],
+    train_dataset=tokenized_datasets["train"],
 )
+
 trainer.train()
