@@ -77,5 +77,5 @@ def main():
     trainer.train()
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     main()
