@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from datasets import load_dataset
 from transformers import DataCollatorForLanguageModeling, EsmConfig, EsmForMaskedLM, Trainer, TrainingArguments
@@ -19,6 +20,12 @@ parser.add_argument(
 )
 config = parser.parse_args()
 
+if not os.path.exists(config.output_dir):
+    os.makedirs(config.output_dir)
+
+
+os.environ["TOKENIZERS_PARALLELISM"] = "true"
+
 
 ## Load the dataset ##
 
@@ -30,17 +37,23 @@ dataset = load_dataset(config.data)
 # TODO: Find the best tokenizer
 
 # You can choose the tokenizer type, default is bpe
-tokenizer = train_tokenizer(dataset=dataset, tokenization_type=config.tokenizer, vocab_size=config.vocab_size)
+tokenizer = train_tokenizer(
+    dataset=dataset,
+    tokenization_type=config.tokenizer,
+    vocab_size=config.vocab_size,
+    out_dir=config.output_dir,
+)
 
 
 ### Tokenize the dataset
 def tokenize_function(examples: dict) -> list[list[int]]:
-    tokens = tokenizer.encode_batch(examples["text"])
-    return {"ids": [t.ids for t in tokens]}
+    return tokenizer(examples["Sequence"])
 
 
 # Apply the tokenization function to the dataset
-dataset = dataset.map(tokenize_function, batched=True)
+tokenized_dataset = dataset.map(
+    tokenize_function, batched=True, remove_columns=["Sequence", "__index_level_0__", "EntryID"]
+)
 
 ### Setup Model ###
 
@@ -74,7 +87,7 @@ trainer = Trainer(
     args=training_args,
     data_collator=data_collator,
     tokenizer=tokenizer,
-    training_dataset=dataset["train"]["Sequence"],
-    eval_dataset=dataset["validation"]["Sequence"],
+    train_dataset=dataset["train"],
+    eval_dataset=dataset["validation"],
 )
 trainer.train()

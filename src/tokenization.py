@@ -1,3 +1,4 @@
+import os
 from typing import Literal
 
 from datasets import Dataset, DatasetDict
@@ -14,12 +15,21 @@ from transformers import PreTrainedTokenizerFast
 def train_tokenizer(
     dataset: Dataset | DatasetDict,
     tokenization_type: Literal["bpe", "wordpiece", "unigram", "wordlevel"] = "bpe",
-    output_file_directory: str = "data/tokenizer.json",
+    out_dir: str = "data",
     vocab_size: int = 5000,
 ):
+    path = os.path.join(out_dir, f"{tokenization_type}.json")
+    if os.path.exists(path):
+        tokenizer = PreTrainedTokenizerFast(tokenizer_file=path)
+        tokenizer.mask_token = "[MASK]"
+        tokenizer.pad_token = "[PAD]"
+        return tokenizer
     if tokenization_type == "bpe":
         tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
-        trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size)
+        trainer = BpeTrainer(
+            special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"],
+            vocab_size=vocab_size,
+        )
     elif tokenization_type == "wordpiece":
         tokenizer = Tokenizer(WordPiece(unk_token="[UNK]"))
         trainer = WordPieceTrainer(
@@ -33,13 +43,10 @@ def train_tokenizer(
         trainer = WordLevelTrainer(
             special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size
         )
-
     tokenizer.pre_tokenizer = Whitespace()  # Necessary to avoid \n in tokens
-
     tokenizer.train_from_iterator(iterator=dataset["train"]["Sequence"], trainer=trainer)
-
-    tokenizer.save(output_file_directory)  # Saves to token.json
-
-    tokenizer = PreTrainedTokenizerFast(tokenizer_file=output_file_directory)
-
+    tokenizer.save(path)
+    tokenizer = PreTrainedTokenizerFast(path)
+    tokenizer.mask_token = "[MASK]"
+    tokenizer.pad_token = "[PAD]"
     return tokenizer
