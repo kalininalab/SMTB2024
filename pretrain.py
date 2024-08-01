@@ -45,9 +45,11 @@ tokenizer = train_tokenizer(
 
 
 ### Tokenize the dataset
-def tokenize_function(examples: dict) -> list[list[int]]:
-    tokens = tokenizer.encode_batch(examples["text"])
-    return {"ids": [t.ids for t in tokens]}
+def tokenize_function(examples: dict) -> dict:
+    max_length = 1024  # Define the maximum length for the sequences
+    tokens = tokenizer.encode_batch(examples["Sequence"])
+    truncated_tokens = [token_ids[:max_length] for token_ids in tokens]
+    return {"ids": truncated_tokens}
 
 
 # Apply the tokenization function to the dataset
@@ -85,7 +87,7 @@ trainer = Trainer(
     args=training_args,
     data_collator=data_collator,
     tokenizer=tokenizer,
-    training_dataset=dataset["train"]["Sequence"],
+    train_dataset=dataset["train"]["Sequence"],
     eval_dataset=dataset["validation"]["Sequence"],
 )
 trainer.train()
