@@ -2,7 +2,7 @@ import argparse
 
 from datasets import load_dataset
 
-from src.tokenizers import train_tokenizer
+from src.tokenization import train_tokenizer
 
 parser = argparse.ArgumentParser(description="Pretrain a model")
 parser.add_argument("--data", type=str, default="khairi/uniprot-swissprot", help="Name of data to be trained on")
