@@ -30,7 +30,7 @@ tokenizer = train_tokenizer(dataset=dataset, tokenization_type=config.tokenizer,
 
 
 ### TODO: Tokenize the dataset
-def tokenize_function(examples):
+def tokenize_function(examples: dict) -> list[list[int]]:
     tokens = tokenizer.encode_batch(examples["text"])
     return {"ids": [t.ids for t in tokens]}
 
