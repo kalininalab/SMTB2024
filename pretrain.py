@@ -57,6 +57,7 @@ training_args = TrainingArguments(
 # The dataset is composed of multiple files: test.parquet, train.parquet, and valid.parquet each composed of different sequences. The function/library I'm using (datasets.load_dataset) parses it into different attributes in a class. You can get them by fetching train, test, or valid.
 
 # In addition, each file is composed of different columns, the one we need being sequence which is why we narrow down our search to it.
+# About the structure: https://chatgpt.com/share/488dafd8-f8a9-4280-8a07-d7661273af8e
 trainer = Trainer(
     model=model,
     args=training_args,
