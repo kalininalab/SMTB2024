@@ -41,7 +41,7 @@ tokenized_datasets = dataset.map(
 
 
 config = EsmConfig(
-    vocab_size=args.vocab_size + 100,  # Same as vocab size you used for the tokenizer
+    vocab_size=args.vocab_size,  # Same as vocab size you used for the tokenizer
     hidden_size=128,
     num_hidden_layers=6,
     num_attention_heads=4,
@@ -57,7 +57,7 @@ training_args = TrainingArguments(
     output_dir="./esm-from-scratch",
     overwrite_output_dir=True,
     num_train_epochs=3,
-    per_device_train_batch_size=64,
+    per_device_train_batch_size=4,
     save_steps=10_000,
     save_total_limit=2,
     no_cuda=True,
@@ -71,6 +71,7 @@ trainer = Trainer(
 )
 
 print(model.esm.embeddings)
-print(tokenized_datasets["validation"]["input_ids"])
+print(tokenized_datasets)
+print(tokenized_datasets["validation"]["input_ids"][0])
 
 trainer.train()
