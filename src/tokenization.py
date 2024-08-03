@@ -23,7 +23,7 @@ def train_tokenizer(
     tokenization_type: Literal["bpe", "wordpiece", "unigram", "wordlevel", "char"] = "bpe",
     output_file_directory: str = "data/tokenizer.json",
     vocab_size: int = 5000,
-) -> transformers.PreTrainedTokenizerFast:
+) -> transformers.PreTrainedTokenizerFast | CharacterTokenizer:
     directory = os.path.dirname(output_file_directory)
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -81,11 +81,6 @@ def train_tokenizer(
         model_max_length = 1024
         tokenizer = CharacterTokenizer(vocab, model_max_length=model_max_length)
         tokenizer.save_pretrained(directory)
-        if directory.endswith() == "/":
-            output_file_directory = f"{directory}tokenizer_config.json"
-        else:
-            output_file_directory = f"{directory}/tokenizer_config.json"
-        tokenizer = PreTrainedTokenizerFast(tokenizer_file=output_file_directory)
         return tokenizer
 
     tokenizer.train_from_iterator(iterator=dataset["train"]["Sequence"], trainer=trainer)

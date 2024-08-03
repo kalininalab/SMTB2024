@@ -10,7 +10,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 
 parser = argparse.ArgumentParser(description="Pretrain a model")
 parser.add_argument("--data", type=str, default="khairi/uniprot-swissprot", help="Name of data to be trained on")
-parser.add_argument("--tokenizer", default="bpe", type=str, choices=["char", "bpe"], help="Tokenizer to use")
+parser.add_argument("--tokenizer", default="char", type=str, choices=["char", "bpe"], help="Tokenizer to use")
 parser.add_argument("--vocab_size", default=5000, type=int, help="Vocabulary size")
 parser.add_argument("--n_layers", type=int, default=12, help="Number of layers in the model")
 parser.add_argument("--n_dims", type=int, default=480, help="Dimensions of the model")
@@ -52,7 +52,6 @@ def tokenize_function(examples: dict) -> dict:
     return tokens
 
 
-# Apply the tokenization function to the dataset
 dataset = dataset.map(tokenize_function, batched=True, remove_columns=["Sequence"])
 
 ### Setup Model ###
@@ -61,7 +60,7 @@ esm_config = EsmConfig(
     num_hidden_layers=config.n_layers,
     hidden_size=config.n_dims,
     num_attention_heads=config.n_heads,
-    pad_token_id=tokenizer.pad_token_id,  # Ensure the pad token ID is set correctly
+    pad_token_id=tokenizer.pad_token_id,
 )
 
 model = EsmForMaskedLM(
