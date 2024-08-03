@@ -1,3 +1,5 @@
+import os
+import pickle
 from typing import Any, Literal
 
 import esm
@@ -75,19 +77,63 @@ class ESMEmbedder:
         return results
 
 
-class DataRead:
-    def get_protlist(df):
-        data = pd.read_csv(df)
-        prot_list = []
-        d_dict = data.to_dict(orient="index")
-        for key in d_dict.keys():
-            n = d_dict[key][list(d_dict[key].keys())[0]]
-            prot_list.append(n)
-        return prot_list
+def get_protlist(df: str):
+    """
+    Get the protein sequences from the given DataFrame.
 
-    def embeddings_to_dataset(dataframe, embeddings, layer):
-        labels = list(dataframe[dataframe.columns[1]])
-        embedd_list = []
-        for i in range(len(embeddings)):
-            embedd_list.append(embeddings[i]["representations"][layer])
-        return DownstreamDataset(embedd_list, labels)
+    :param df: Path to the DataFrame
+    :return: A list of protein sequences
+    """
+    data = pd.read_csv(df)
+    prot_list = []
+    d_dict = data.to_dict(orient="index")
+    for key in d_dict.keys():
+        n = d_dict[key][list(d_dict[key].keys())[0]]
+        prot_list.append(n)
+    return prot_list
+
+
+def embeddings_to_dataset(dataframe: pd.DataFrame, embeddings: list[dict[Any, dict[Any, Any] | Any]], layer: int):
+    """
+    Convert the embeddings to a DownstreamDataset object.
+
+    :param dataframe: DataFrame of the dataset
+    :param embeddings: List of embeddings for each protein sequence
+    :param layer: Layer of the model to use for the embeddings
+    :return: DownstreamDataset object
+    """
+    labels = list(dataframe[dataframe.columns[1]])
+    embedd_list = []
+    for i in range(len(embeddings)):
+        embedd_list.append(embeddings[i]["representations"][layer].mean([0, 1]))
+    return DownstreamDataset(embedd_list, labels)
+
+
+def load_dataset(path: str, nlayers: int):
+    """
+    Preprocess the dataset from the given path and compute the embeddings for the model with nlayers-many layers.
+
+    :param path: Path to the dataset
+    :param nlayers: Maximum number of layers of the model to use for embedding
+    :return: A list of DownstreamDataset objects, one for each layer of the model
+    """
+    save_path = path[:-3] + "pkl"
+
+    # Load results from pkl file
+    if os.path.exists(save_path):
+        with open(save_path, "rb") as f:
+            return pickle.load(f)
+
+    df = pd.read_csv(path)
+    protlist = get_protlist(path)
+    protlist_emb = ESMEmbedder(nlayers).run(protlist)
+    dataset_list = []
+    for i in range(nlayers):
+        df_embedded = embeddings_to_dataset(df, protlist_emb, i)
+        dataset_list.append(df_embedded)
+
+    # save results
+    with open(save_path, "wb") as f:
+        pickle.dump(dataset_list, f)
+
+    return dataset_list
