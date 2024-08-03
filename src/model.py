@@ -8,10 +8,20 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class Model(pl.LightningModule):
+    """
+    A PyTorch Lightning Module for a simple neural network model.
+
+    Args:
+        hidden_dim (int): The number of hidden dimensions for the model.
+        dropout (float): Dropout rate for regularization. Default is 0.5.
+        lr (float): Learning rate for the optimizer. Default is 0.001.
+        reduce_lr_patience (int): Patience parameter for the ReduceLROnPlateau scheduler. Default is 50.
+    """
+
     def __init__(self, hidden_dim: int, dropout: float = 0.5, lr: float = 0.001, reduce_lr_patience: int = 50):
         super().__init__()
         self.lr = lr
-        self.reduce_lr_parience = reduce_lr_patience
+        self.reduce_lr_patience = reduce_lr_patience
         self.model = nn.Sequential(
             nn.LazyLinear(hidden_dim),
             nn.ReLU(),
@@ -20,9 +30,28 @@ class Model(pl.LightningModule):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass through the model.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Output tensor.
+        """
         return self.model(x).squeeze(1)
 
     def shared_step(self, batch: tuple[torch.Tensor, torch.Tensor], name: str = "train") -> torch.Tensor:
+        """
+        A shared step for training, validation, and testing.
+
+        Args:
+            batch (tuple[torch.Tensor, torch.Tensor]): A batch of data containing inputs and targets.
+            name (str): The name of the step (train, val, test). Default is "train".
+
+        Returns:
+            torch.Tensor: The computed loss.
+        """
         x, y = batch
 
         # compute the prediction
@@ -41,22 +70,55 @@ class Model(pl.LightningModule):
         return loss
 
     def training_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """
+        A single training step.
+
+        Args:
+            batch (tuple[torch.Tensor, torch.Tensor]): A batch of data containing inputs and targets.
+
+        Returns:
+            torch.Tensor: The computed loss.
+        """
         return self.shared_step(batch, "train")
 
     def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """
+        A single validation step.
+
+        Args:
+            batch (tuple[torch.Tensor, torch.Tensor]): A batch of data containing inputs and targets.
+
+        Returns:
+            torch.Tensor: The computed loss.
+        """
         return self.shared_step(batch, "val")
 
     def test_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """
+        A single test step.
+
+        Args:
+            batch (tuple[torch.Tensor, torch.Tensor]): A batch of data containing inputs and targets.
+
+        Returns:
+            torch.Tensor: The computed loss.
+        """
         return self.shared_step(batch, "test")
 
     def configure_optimizers(self):
-        optimisers = [optim.Adam(self.parameters(), lr=self.lr)]
+        """
+        Configure the optimizers and learning rate scheduler.
+
+        Returns:
+            tuple: A tuple containing the optimizers and the learning rate schedulers.
+        """
+        optimizers = [optim.Adam(self.parameters(), lr=self.lr)]
         schedulers = [
             {
                 "scheduler": ReduceLROnPlateau(
-                    optimisers[0],
+                    optimizers[0],
                     factor=0.1,
-                    patience=self.reduce_lr_parience,
+                    patience=self.reduce_lr_patience,
                     min_lr=1e-7,
                 ),
                 "monitor": "val/loss",
@@ -64,4 +126,4 @@ class Model(pl.LightningModule):
                 "frequency": 1,
             }
         ]
-        return optimisers, schedulers
+        return optimizers, schedulers

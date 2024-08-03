@@ -1,14 +1,14 @@
 import torch
-import wandb
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, RichModelSummary, RichProgressBar
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import DataLoader
 
+import wandb
 from src.data import DownstreamDataset
 from src.model import Model
 
-# technical setting to make sure, parallelization works if multiple models are trained in parallel
+# Technical setting to make sure parallelization works if multiple models are trained in parallel
 torch.multiprocessing.set_sharing_strategy("file_system")
 
 
@@ -25,10 +25,26 @@ def train(
     reduce_lr_patience: int = 30,
     seed: int = 42,
 ):
-    # for reproducibility
+    """
+    Trains the model with the specified parameters.
+
+    Args:
+        model_name (str): Name of the model.
+        layer_num (int): Number of layers in the model.
+        hidden_dim (int, optional): Hidden dimension of the model. Defaults to 512.
+        batch_size (int, optional): Batch size. Defaults to 1024.
+        max_epoch (int, optional): Maximum number of epochs. Defaults to 200.
+        dropout (float, optional): Dropout rate. Defaults to 0.2.
+        dataset (str, optional): Path to the dataset. Defaults to "/shared/stability".
+        early_stopping_patience (int, optional): Patience for early stopping. Defaults to 30.
+        lr (float, optional): Learning rate. Defaults to 0.001.
+        reduce_lr_patience (int, optional): Patience for reducing the learning rate. Defaults to 30.
+        seed (int, optional): Seed for reproducibility. Defaults to 42.
+    """
+    # For reproducibility
     seed_everything(seed)
 
-    # define the logger
+    # Define the logger
     logger = WandbLogger(
         log_model=True,
         project=dataset.split("/")[-1],
@@ -45,7 +61,7 @@ def train(
         },
     )
 
-    # define the callbacks with EarlyStopping and two more for nicer tracking
+    # Define the callbacks with EarlyStopping and two more for nicer tracking
     callbacks = [
         EarlyStopping(monitor="val/loss", patience=early_stopping_patience, mode="min"),
         RichModelSummary(),
@@ -53,7 +69,7 @@ def train(
         ModelCheckpoint(monitor="val/loss", mode="min"),
     ]
 
-    # define the Trainer and it's most important arguments
+    # Define the Trainer and its most important arguments
     trainer = Trainer(
         devices=1,
         max_epochs=max_epoch,
@@ -61,10 +77,10 @@ def train(
         logger=logger,
     )
 
-    # initialize the model
+    # Initialize the model
     model = Model(hidden_dim=hidden_dim, dropout=dropout)
 
-    # look into the directory below
+    # Look into the directory below
     datasets = []
     # TODO FIXME
     # for ds in ["train", "validation", "test"]:
@@ -81,7 +97,7 @@ def train(
 
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=validation_dataloader)
 
-    # fit and test the (best) model
+    # Fit and test the (best) model
     trainer.test(ckpt_path="best", dataloaders=test_dataloader)
 
 
@@ -107,18 +123,19 @@ def run(
     reduce_lr_patience: int = 30,
     seed: int = 42,
 ):
-    """Runs the training of the model with the given parameters.
+    """
+    Runs the training of the model with the given parameters.
 
     Args:
-        num_layers (int): Models with which number of layers to use.
-        dataset (str): Path to the dataset. Must contain folders with esm embeddings.
+        num_layers (int): Number of layers in the model.
+        dataset (str): Path to the dataset. Must contain folders with ESM embeddings.
         hidden_dim (int, optional): Hidden dimension of the model. Defaults to 512.
         batch_size (int, optional): Batch size. Defaults to 1024.
-        max_epoch (int, optional): Maximum number of epochs. Defaults to 10000.
+        max_epoch (int, optional): Maximum number of epochs. Defaults to 200.
         dropout (float, optional): Dropout rate. Defaults to 0.2.
-        early_stopping_patience (int, optional): Patience for early stopping. Defaults to 100.
+        early_stopping_patience (int, optional): Patience for early stopping. Defaults to 30.
         lr (float, optional): Learning rate. Defaults to 0.001.
-        reduce_lr_patience (int, optional): Patience for reducing the learning rate. Defaults to 50.
+        reduce_lr_patience (int, optional): Patience for reducing the learning rate. Defaults to 30.
         seed (int, optional): Seed for reproducibility. Defaults to 42.
     """
     model_name = model_names[num_layers]

@@ -12,3 +12,13 @@ data/*
 *.html
 *.json
 wandb/
+
+*.doctree
+*.pickle
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+build/
+_build/

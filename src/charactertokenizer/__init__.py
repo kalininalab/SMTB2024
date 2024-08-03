@@ -1,10 +1,3 @@
-"""CharacterTokenzier for Hugging Face Transformers.
-
-This is heavily inspired from CanineTokenizer in transformers package.
-
-Inspired and modified from dariush-bahrami/character-tokenizer
-"""
-
 import json
 import os
 from pathlib import Path
@@ -14,25 +7,28 @@ from transformers.tokenization_utils import AddedToken, PreTrainedTokenizer
 
 
 class CharacterTokenizer(PreTrainedTokenizer):
+    """Character tokenizer for Hugging Face transformers.
+
+    Args:
+        characters (Sequence[str]): List of desired characters. Any character which
+            is not included in this list will be replaced by a special token called
+            [UNK] with id=6. Following are list of all of the special tokens with
+            their corresponding ids:
+
+            - "[CLS]": 0
+            - "[SEP]": 1
+            - "[BOS]": 2
+            - "[MASK]": 3
+            - "[PAD]": 4
+            - "[RESERVED]": 5
+            - "[UNK]": 6
+
+            An id (starting at 7) will be assigned to each character.
+
+        model_max_length (int): Model maximum sequence length.
+    """
+
     def __init__(self, characters: Sequence[str], model_max_length: int, **kwargs):
-        """Character tokenizer for Hugging Face transformers.
-
-        Args:
-            characters (Sequence[str]): List of desired characters. Any character which
-                is not included in this list will be replaced by a special token called
-                [UNK] with id=6. Following are list of all of the special tokens with
-                their corresponding ids:
-                    "[CLS]": 0
-                    "[SEP]": 1
-                    "[BOS]": 2
-                    "[MASK]": 3
-                    "[PAD]": 4
-                    "[RESERVED]": 5
-                    "[UNK]": 6
-                an id (starting at 7) will be assigned to each character.
-
-            model_max_length (int): Model maximum sequence length.
-        """
         self.characters = characters
         self.model_max_length = model_max_length
         bos_token = AddedToken("[BOS]", lstrip=False, rstrip=False)
@@ -41,7 +37,6 @@ class CharacterTokenizer(PreTrainedTokenizer):
         cls_token = AddedToken("[CLS]", lstrip=False, rstrip=False)
         pad_token = AddedToken("[PAD]", lstrip=False, rstrip=False)
         unk_token = AddedToken("[UNK]", lstrip=False, rstrip=False)
-
         mask_token = AddedToken("[MASK]", lstrip=True, rstrip=False)
 
         self._vocab_str_to_int = {
@@ -71,26 +66,73 @@ class CharacterTokenizer(PreTrainedTokenizer):
 
     @property
     def vocab_size(self) -> int:
+        """Returns the size of the vocabulary."""
         return len(self._vocab_str_to_int)
 
-    def get_vocab(self):
+    def get_vocab(self) -> Dict[str, int]:
+        """Returns the vocabulary dictionary.
+
+        Returns:
+            Dict[str, int]: A dictionary mapping tokens to their corresponding IDs.
+        """
         return self._vocab_str_to_int
 
     def _tokenize(self, text: str) -> List[str]:
+        """Tokenizes a given text into characters.
+
+        Args:
+            text (str): The input text to tokenize.
+
+        Returns:
+            List[str]: A list of characters from the input text.
+        """
         return list(text)
 
     def _convert_token_to_id(self, token: str) -> int:
+        """Converts a token (character) to its corresponding ID.
+
+        Args:
+            token (str): The token to convert.
+
+        Returns:
+            int: The ID corresponding to the token.
+        """
         return self._vocab_str_to_int.get(token, self._vocab_str_to_int["[UNK]"])
 
     def _convert_id_to_token(self, index: int) -> str:
+        """Converts an ID to its corresponding token (character).
+
+        Args:
+            index (int): The ID to convert.
+
+        Returns:
+            str: The token corresponding to the ID.
+        """
         return self._vocab_int_to_str[index]
 
-    def convert_tokens_to_string(self, tokens):
+    def convert_tokens_to_string(self, tokens: List[str]) -> str:
+        """Converts a list of tokens (characters) to a string.
+
+        Args:
+            tokens (List[str]): The list of tokens to convert.
+
+        Returns:
+            str: The resulting string.
+        """
         return "".join(tokens)
 
     def build_inputs_with_special_tokens(
         self, token_ids_0: List[int], token_ids_1: Optional[List[int]] = None
     ) -> List[int]:
+        """Builds model inputs from a sequence or a pair of sequences.
+
+        Args:
+            token_ids_0 (List[int]): The first sequence of token IDs.
+            token_ids_1 (Optional[List[int]]): The optional second sequence of token IDs.
+
+        Returns:
+            List[int]: The resulting sequence of token IDs with special tokens.
+        """
         sep = [self.sep_token_id]
         cls = [self.cls_token_id]
         result = cls + token_ids_0 + sep
@@ -104,6 +146,16 @@ class CharacterTokenizer(PreTrainedTokenizer):
         token_ids_1: Optional[List[int]] = None,
         already_has_special_tokens: bool = False,
     ) -> List[int]:
+        """Retrieves sequence ids from a token list that has no special tokens added.
+
+        Args:
+            token_ids_0 (List[int]): List of IDs.
+            token_ids_1 (Optional[List[int]]): Optional second list of IDs.
+            already_has_special_tokens (bool): Whether the token list already contains special tokens.
+
+        Returns:
+            List[int]: A list of integers in the range [0, 1] representing special tokens mask.
+        """
         if already_has_special_tokens:
             return super().get_special_tokens_mask(
                 token_ids_0=token_ids_0,
@@ -119,6 +171,15 @@ class CharacterTokenizer(PreTrainedTokenizer):
     def create_token_type_ids_from_sequences(
         self, token_ids_0: List[int], token_ids_1: Optional[List[int]] = None
     ) -> List[int]:
+        """Creates token type IDs from sequences.
+
+        Args:
+            token_ids_0 (List[int]): The first sequence of token IDs.
+            token_ids_1 (Optional[List[int]]): The optional second sequence of token IDs.
+
+        Returns:
+            List[int]: List of token type IDs.
+        """
         sep = [self.sep_token_id]
         cls = [self.cls_token_id]
 
@@ -128,6 +189,11 @@ class CharacterTokenizer(PreTrainedTokenizer):
         return result
 
     def get_config(self) -> Dict:
+        """Returns the configuration of the tokenizer.
+
+        Returns:
+            Dict: A dictionary containing the tokenizer configuration.
+        """
         return {
             "char_ords": [ord(ch) for ch in self.characters],
             "model_max_length": self.model_max_length,
@@ -135,23 +201,52 @@ class CharacterTokenizer(PreTrainedTokenizer):
 
     @classmethod
     def from_config(cls, config: Dict) -> "CharacterTokenizer":
+        """Instantiates a tokenizer from a configuration dictionary.
+
+        Args:
+            config (Dict): The configuration dictionary.
+
+        Returns:
+            CharacterTokenizer: An instance of the CharacterTokenizer.
+        """
         cfg = {}
         cfg["characters"] = [chr(i) for i in config["char_ords"]]
         cfg["model_max_length"] = config["model_max_length"]
         return cls(**cfg)
 
     def save_pretrained(self, save_directory: Union[str, os.PathLike], **kwargs):
+        """Saves the tokenizer configuration to a directory.
+
+        Args:
+            save_directory (Union[str, os.PathLike]): The directory where the configuration will be saved.
+        """
         cfg_file = Path(save_directory) / "tokenizer_config.json"
         cfg = self.get_config()
         with open(cfg_file, "w") as f:
             json.dump(cfg, f, indent=4)
 
     @classmethod
-    def from_pretrained(cls, save_directory: Union[str, os.PathLike], **kwargs):
+    def from_pretrained(cls, save_directory: Union[str, os.PathLike], **kwargs) -> "CharacterTokenizer":
+        """Loads a tokenizer from a directory.
+
+        Args:
+            save_directory (Union[str, os.PathLike]): The directory where the configuration is saved.
+
+        Returns:
+            CharacterTokenizer: An instance of the CharacterTokenizer.
+        """
         cfg_file = Path(save_directory) / "tokenizer_config.json"
         with open(cfg_file) as f:
             cfg = json.load(f)
         return cls.from_config(cfg)
 
     def encode_batch(self, texts: List[str]) -> List[List[int]]:
+        """Encodes a batch of texts into token IDs.
+
+        Args:
+            texts (List[str]): A list of texts to encode.
+
+        Returns:
+            List[List[int]]: A list of lists containing token IDs for each input text.
+        """
         return [self.encode(text) for text in texts]

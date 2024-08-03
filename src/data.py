@@ -8,23 +8,55 @@ from tqdm import tqdm
 
 
 class DownstreamDataset(Dataset):
+    """
+    A Dataset class for handling embeddings and labels for downstream tasks.
+
+    Args:
+        embeddings (list[torch.Tensor]): A list of embeddings.
+        labels (list): A list of labels corresponding to the embeddings.
+    """
+
     def __init__(self, embeddings: list[torch.Tensor], labels: list):
         """
-        Initialize the DownstreamDataset as a collection of the embeddings and labels.
-        :param embeddings: A list of embeddings.
-        :param labels: A list of labels.
+        Initialize the DownstreamDataset with embeddings and labels.
+
+        Args:
+            embeddings (list[torch.Tensor]): A list of embeddings.
+            labels (list): A list of labels.
         """
         self.embeddings = embeddings
         self.labels = labels
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """
+        Returns the total number of samples in the dataset.
+
+        Returns:
+            int: The total number of samples.
+        """
         return len(self.embeddings)
 
     def __getitem__(self, idx: int):
+        """
+        Retrieves the embedding and label at the specified index.
+
+        Args:
+            idx (int): The index of the sample to retrieve.
+
+        Returns:
+            tuple: A tuple containing the embedding and the corresponding label.
+        """
         return self.embeddings[idx], self.labels[idx]
 
 
 class ESMEmbedder:
+    """
+    A class to handle embeddings using ESM models from the 'esm' library.
+
+    Args:
+        num_layers (Literal[6, 12, 30, 33]): The number of layers in the ESM model to use.
+    """
+
     def __init__(self, num_layers: Literal[6, 12, 30, 33]):
         self.num_layers = num_layers
         self.models = {
@@ -52,42 +84,70 @@ class ESMEmbedder:
     ) -> list[dict[Any, dict[Any, Any] | Any]]:
         """
         Compute the embeddings from one ESM Model for the given protein sequences.
-        :param data: A list of protein sequences, give as strings.
-        :param layers: A list of layers to look at. If none, all layers are used.
-        :param contacts: Boolean flag to extract contacts (mostly not used)
-        :return: A list of dictionaries with the embeddings for each protein sequence.
+
+        Args:
+            data (list[str]): A list of protein sequences given as strings.
+            layers (list[int], optional): A list of layers to look at. If None, all layers are used.
+            contacts (bool): Boolean flag to extract contacts (default is False).
+
+        Returns:
+            list[dict[Any, dict[Any, Any] | Any]]: A list of dictionaries with the embeddings for each protein sequence.
         """
         if layers is None:
             layers = range(self.num_layers + 1)
         results = []
         for prot in tqdm(data):
-            batch_labels, batch_strs, batch_tokens = self.batch_converter([("alper", prot)])
+            batch_labels, batch_strs, batch_tokens = self.batch_converter([("protein", prot)])
             batch_tokens = batch_tokens.to(self.device)  # Ensure tokens are on the GPU
             with torch.no_grad():
-                i = self.model.forward(batch_tokens, repr_layers=layers, return_contacts=contacts)
-                detached_i = {}
-                for k, v in i.items():
+                outputs = self.model(batch_tokens, repr_layers=layers, return_contacts=contacts)
+                detached_outputs = {}
+                for k, v in outputs.items():
                     if isinstance(v, dict):  # Check if value is a dictionary (like "representations")
-                        detached_i[k] = {k1: v1.detach().cpu() for k1, v1 in v.items()}
+                        detached_outputs[k] = {k1: v1.detach().cpu() for k1, v1 in v.items()}
                     else:
-                        detached_i[k] = v.detach().cpu()
-                results.append(detached_i)
+                        detached_outputs[k] = v.detach().cpu()
+                results.append(detached_outputs)
         return results
 
 
 class DataRead:
-    def get_protlist(df):
+    """
+    A utility class for reading data and converting embeddings to datasets.
+    """
+
+    @staticmethod
+    def get_protlist(df: str) -> list[str]:
+        """
+        Reads a CSV file and extracts a list of protein sequences.
+
+        Args:
+            df (str): Path to the CSV file.
+
+        Returns:
+            list[str]: A list of protein sequences.
+        """
         data = pd.read_csv(df)
         prot_list = []
-        d_dict = data.to_dict(orient="index")
-        for key in d_dict.keys():
-            n = d_dict[key][list(d_dict[key].keys())[0]]
-            prot_list.append(n)
+        data_dict = data.to_dict(orient="index")
+        for key in data_dict.keys():
+            sequence = data_dict[key][list(data_dict[key].keys())[0]]
+            prot_list.append(sequence)
         return prot_list
 
-    def embeddings_to_dataset(dataframe, embeddings, layer):
+    @staticmethod
+    def embeddings_to_dataset(dataframe: pd.DataFrame, embeddings: list, layer: int) -> DownstreamDataset:
+        """
+        Converts embeddings and a dataframe to a DownstreamDataset.
+
+        Args:
+            dataframe (pd.DataFrame): A dataframe containing labels.
+            embeddings (list): A list of embeddings.
+            layer (int): The layer to extract representations from.
+
+        Returns:
+            DownstreamDataset: A dataset containing the embeddings and labels.
+        """
         labels = list(dataframe[dataframe.columns[1]])
-        embedd_list = []
-        for i in range(len(embeddings)):
-            embedd_list.append(embeddings[i]["representations"][layer])
-        return DownstreamDataset(embedd_list, labels)
+        embedding_list = [embeddings[i]["representations"][layer] for i in range(len(embeddings))]
+        return DownstreamDataset(embedding_list, labels)

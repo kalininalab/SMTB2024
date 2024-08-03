@@ -9,3 +9,5 @@ transformers
 beartype
 datasets
 transformers[torch]
+sphinx
+sphinx-book-theme
