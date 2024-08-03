@@ -3,7 +3,7 @@ import torch
 # import wandb
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, RichModelSummary, RichProgressBar
-from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.loggers import CSVLogger
 from torch.utils.data import DataLoader, random_split
 
 from src.data import DownstreamDataset, load_dataset
@@ -15,6 +15,7 @@ torch.multiprocessing.set_sharing_strategy("file_system")
 
 def train(
     dataset: DownstreamDataset,
+    dataset_path: str,
     model_name: str,
     layer_num: int,
     hidden_dim: int = 512,
@@ -30,12 +31,13 @@ def train(
     seed_everything(seed)
 
     # define the logger
-    logger = WandbLogger(
-        log_model=True,
-        project=dataset.split("/")[-1],
-        entity="smtb2024",
-        name=f"{model_name.split('_')[1]}_{layer_num:02d}",
-        config={
+    logger = CSVLogger(
+        save_dir="/scratch/logs",
+        name=f"{dataset_path.split('_')[1]}_{layer_num:02d}",
+    )
+
+    logger.log_hyperparams(
+        {
             "model_name": model_name,
             "layer_num": layer_num,
             "hidden_dim": hidden_dim,
@@ -43,9 +45,8 @@ def train(
             "early_stopping_patience": early_stopping_patience,
             "lr": lr,
             "reduce_lr_patience": reduce_lr_patience,
-        },
+        }
     )
-
     # define the callbacks with EarlyStopping and two more for nicer tracking
     callbacks = [
         EarlyStopping(monitor="val/loss", patience=early_stopping_patience, mode="min"),
@@ -89,7 +90,7 @@ model_names = {
 
 def run(
     num_layers: int,
-    dataset: str,
+    dataset_path: str,
     hidden_dim: int = 512,
     batch_size: int = 1024,
     max_epoch: int = 200,
@@ -114,15 +115,16 @@ def run(
         seed (int, optional): Seed for reproducibility. Defaults to 42.
     """
     model_name = model_names[num_layers]
-    for dataset in load_dataset("/scratch/alice_datasets/stability.csv", 6):
+    for i, dataset in enumerate(load_dataset(dataset_path, num_layers)):
         train(
-            model_name,
             dataset,
+            dataset_path,
+            model_name,
+            i,
             hidden_dim,
             batch_size,
             max_epoch,
             dropout,
-            dataset,
             early_stopping_patience,
             lr,
             reduce_lr_patience,
