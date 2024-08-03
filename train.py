@@ -1,3 +1,6 @@
+import random
+import string
+
 import torch
 
 # import wandb
@@ -13,19 +16,23 @@ from src.model import Model
 torch.multiprocessing.set_sharing_strategy("file_system")
 
 
+def random_string(k: int = 5):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=k))
+
+
 def train(
-    dataset: DownstreamDataset,
-    dataset_path: str,
-    model_name: str,
-    layer_num: int,
-    hidden_dim: int = 512,
-    batch_size: int = 1024,
-    max_epoch: int = 200,
-    dropout: float = 0.2,
-    early_stopping_patience: int = 30,
-    lr: float = 0.001,
-    reduce_lr_patience: int = 30,
-    seed: int = 42,
+        dataset: DownstreamDataset,
+        dataset_path: str,
+        model_name: str,
+        layer_num: int,
+        hidden_dim: int = 512,
+        batch_size: int = 1024,
+        max_epoch: int = 200,
+        dropout: float = 0.2,
+        early_stopping_patience: int = 30,
+        lr: float = 0.001,
+        reduce_lr_patience: int = 30,
+        seed: int = 42,
 ):
     # for reproducibility
     seed_everything(seed)
@@ -33,7 +40,7 @@ def train(
     # define the logger
     logger = CSVLogger(
         save_dir="/scratch/logs",
-        name=f"{dataset_path.split('_')[1]}_{layer_num:02d}",
+        name=f"{dataset_path.split('/')[-1][:-4]}_{model_name.split('_')[1]}_L{layer_num:02d}_{random_string()}",
     )
 
     logger.log_hyperparams(
@@ -88,16 +95,16 @@ model_names = {
 
 
 def run(
-    num_layers: int,
-    dataset_path: str,
-    hidden_dim: int = 512,
-    batch_size: int = 1024,
-    max_epoch: int = 200,
-    dropout: float = 0.2,
-    early_stopping_patience: int = 30,
-    lr: float = 0.001,
-    reduce_lr_patience: int = 30,
-    seed: int = 42,
+        num_layers: int,
+        dataset_path: str,
+        hidden_dim: int = 512,
+        batch_size: int = 1024,
+        max_epoch: int = 200,
+        dropout: float = 0.2,
+        early_stopping_patience: int = 30,
+        lr: float = 0.001,
+        reduce_lr_patience: int = 30,
+        seed: int = 42,
 ):
     """Runs the training of the model with the given parameters.
 
