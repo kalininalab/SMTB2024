@@ -1,3 +1,9 @@
+"""CharacterTokenzier for Hugging Face Transformers.
+
+This is heavily inspired from CanineTokenizer in transformers package.
+
+Inspired and modified from dariush-bahrami/character-tokenizer
+"""
 import json
 import os
 from pathlib import Path

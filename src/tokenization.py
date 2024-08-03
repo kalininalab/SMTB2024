@@ -81,11 +81,10 @@ def train_tokenizer(
         model_max_length = 1024
         tokenizer = CharacterTokenizer(vocab, model_max_length=model_max_length)
         tokenizer.save_pretrained(directory)
-        if directory.endswith("/"):
+        if directory.endswith() == "/":
             output_file_directory = f"{directory}tokenizer_config.json"
         else:
             output_file_directory = f"{directory}/tokenizer_config.json"
-        print(output_file_directory)
         tokenizer = PreTrainedTokenizerFast(tokenizer_file=output_file_directory)
         return tokenizer
 
