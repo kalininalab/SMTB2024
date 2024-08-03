@@ -31,6 +31,19 @@ config = parser.parse_args()
 ## Load the dataset ##
 dataset = load_dataset(config.data)
 
+
+### Preprocess to add sequence length and sort ###
+def add_sequence_length(examples: dict) -> dict:
+    examples["length"] = [len(seq) for seq in examples["Sequence"]]
+    return examples
+
+
+# Add the sequence length column
+dataset = dataset.map(add_sequence_length, batched=True)
+
+# Sort the dataset by sequence length
+dataset = dataset.sort("length")
+
 ### Train the tokenizer & Load the pretrained tokenizer ###
 # You can choose the tokenizer type, default is bpe
 tokenizer = train_tokenizer(
@@ -52,7 +65,11 @@ def tokenize_function(examples: dict) -> dict:
     return tokens
 
 
-dataset = dataset.map(tokenize_function, batched=True, remove_columns=["Sequence"])
+# Tokenize the dataset
+dataset = dataset.map(tokenize_function, batched=True)
+
+# Remove the length column
+dataset = dataset.remove_columns(["Sequence", "length"])
 
 ### Setup Model ###
 esm_config = EsmConfig(
