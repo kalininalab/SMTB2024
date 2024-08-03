@@ -89,7 +89,7 @@ def embeddings_to_dataset(dataframe, embeddings, layer):
     labels = list(dataframe[dataframe.columns[1]])
     embedd_list = []
     for i in range(len(embeddings)):
-        embedd_list.append(embeddings[i]["representations"][layer].mean([0, 1]))
+        embedd_list.append(embeddings[i]["representations"][layer])
     return DownstreamDataset(embedd_list, labels)
 
 

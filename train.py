@@ -4,6 +4,7 @@ import torch
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, RichModelSummary, RichProgressBar
 from pytorch_lightning.loggers import CSVLogger
+from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, random_split
 
 from src.data import DownstreamDataset, load_dataset
@@ -68,9 +69,15 @@ def train(
 
     train, val, test = random_split(dataset, [0.7, 0.2, 0.1])
 
-    train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=True)
-    validation_dataloader = DataLoader(val, batch_size=batch_size)
-    test_dataloader = DataLoader(test, batch_size=batch_size)
+    def collate_fn(batch):
+        tensors = [item[0].squeeze(0) for item in batch]
+        floats = torch.tensor([item[1] for item in batch])
+        padded_sequences = pad_sequence(tensors, batch_first=True, padding_value=0)
+        return padded_sequences, floats
+
+    train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
+    validation_dataloader = DataLoader(val, batch_size=batch_size, collate_fn=collate_fn)
+    test_dataloader = DataLoader(test, batch_size=batch_size, collate_fn=collate_fn)
 
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=validation_dataloader)
 

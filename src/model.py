@@ -6,6 +6,8 @@ import torch.optim as optim
 import torchmetrics as M
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
+from src.pooling import GlobalAttentionPooling
+
 
 class Model(pl.LightningModule):
     def __init__(self, hidden_dim: int, dropout: float = 0.5, lr: float = 0.001, reduce_lr_patience: int = 50):
@@ -13,6 +15,8 @@ class Model(pl.LightningModule):
         self.lr = lr
         self.reduce_lr_parience = reduce_lr_patience
         self.model = nn.Sequential(
+            nn.LazyLinear(hidden_dim),
+            GlobalAttentionPooling(hidden_dim),
             nn.LazyLinear(hidden_dim),
             nn.ReLU(),
             nn.Dropout(p=dropout),
