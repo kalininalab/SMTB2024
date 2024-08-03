@@ -50,7 +50,6 @@ def train(
     # define the callbacks with EarlyStopping and two more for nicer tracking
     callbacks = [
         EarlyStopping(monitor="val/loss", patience=early_stopping_patience, mode="min"),
-        RichModelSummary(),
         RichProgressBar(),
         ModelCheckpoint(monitor="val/loss", mode="min"),
     ]
@@ -65,7 +64,7 @@ def train(
 
     # initialize the model
     model = Model(hidden_dim=hidden_dim, dropout=dropout)
-
+    print(model)
     train, val, test = random_split(dataset, [0.7, 0.2, 0.1])
 
     train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=True)
@@ -116,6 +115,7 @@ def run(
     """
     model_name = model_names[num_layers]
     for i, dataset in enumerate(load_dataset(dataset_path, num_layers)):
+        print("Train layer", i)
         train(
             dataset,
             dataset_path,
@@ -130,9 +130,6 @@ def run(
             reduce_lr_patience,
             seed,
         )
-
-
-#       wandb.finish()
 
 
 if __name__ == "__main__":
