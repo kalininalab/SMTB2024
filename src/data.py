@@ -1,6 +1,6 @@
-from typing import Any, Literal
 import os
 import pickle
+from typing import Any, Literal
 
 import esm
 import pandas as pd
@@ -97,12 +97,12 @@ def embeddings_to_dataset(dataframe, embeddings, layer):
 
 def load_dataset(path, nlayers):
     save_path = path[:-3] + "pkl"
-    
+
     # Load results from pkl file
     if os.path.exists(save_path):
         with open(save_path, "rb") as f:
             return pickle.load(f)
-    
+
     df = pd.read_csv(path)
     protlist = get_protlist(path)
     protlist_emb = ESMEmbedder(nlayers).run(protlist)
@@ -110,9 +110,9 @@ def load_dataset(path, nlayers):
     for i in range(nlayers):
         df_embedded = embeddings_to_dataset(df, protlist_emb, i)
         dataset_list.append(df_embedded)
-    
+
     # save results
     with open(save_path, "wb") as f:
         pickle.dump(dataset_list, f)
-    
+
     return dataset_list
