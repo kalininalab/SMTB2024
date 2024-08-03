@@ -117,18 +117,18 @@ def run(
     for i, dataset in enumerate(load_dataset(dataset_path, num_layers)):
         print("Train layer", i)
         train(
-            dataset,
-            dataset_path,
-            model_name,
-            i,
-            hidden_dim,
-            batch_size,
-            max_epoch,
-            dropout,
-            early_stopping_patience,
-            lr,
-            reduce_lr_patience,
-            seed,
+            dataset=dataset,
+            dataset_path=dataset_path,
+            model_name=model_name,
+            layer_num=i,
+            hidden_dim=hidden_dim,
+            batch_size=batch_size,
+            max_epoch=max_epoch,
+            dropout=dropout,
+            early_stopping_patience=early_stopping_patience,
+            lr=lr,
+            reduce_lr_patience=reduce_lr_patience,
+            seed=seed,
         )
 
 

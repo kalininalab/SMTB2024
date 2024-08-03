@@ -77,7 +77,13 @@ class ESMEmbedder:
         return results
 
 
-def get_protlist(df):
+def get_protlist(df: str):
+    """
+    Get the protein sequences from the given DataFrame.
+
+    :param df: Path to the DataFrame
+    :return: A list of protein sequences
+    """
     data = pd.read_csv(df)
     prot_list = []
     d_dict = data.to_dict(orient="index")
@@ -87,7 +93,15 @@ def get_protlist(df):
     return prot_list
 
 
-def embeddings_to_dataset(dataframe, embeddings, layer):
+def embeddings_to_dataset(dataframe: pd.DataFrame, embeddings: list[dict[Any, dict[Any, Any] | Any]], layer: int):
+    """
+    Convert the embeddings to a DownstreamDataset object.
+
+    :param dataframe: DataFrame of the dataset
+    :param embeddings: List of embeddings for each protein sequence
+    :param layer: Layer of the model to use for the embeddings
+    :return: DownstreamDataset object
+    """
     labels = list(dataframe[dataframe.columns[1]])
     embedd_list = []
     for i in range(len(embeddings)):
@@ -95,7 +109,14 @@ def embeddings_to_dataset(dataframe, embeddings, layer):
     return DownstreamDataset(embedd_list, labels)
 
 
-def load_dataset(path, nlayers):
+def load_dataset(path: str, nlayers: int):
+    """
+    Preprocess the dataset from the given path and compute the embeddings for the model with nlayers-many layers.
+
+    :param path: Path to the dataset
+    :param nlayers: Maximum number of layers of the model to use for embedding
+    :return: A list of DownstreamDataset objects, one for each layer of the model
+    """
     save_path = path[:-3] + "pkl"
 
     # Load results from pkl file
