@@ -17,11 +17,13 @@ parser.add_argument("--n_dims", type=int, default=480, help="Dimensions of the m
 parser.add_argument("--n_heads", type=int, default=16, help="Number of heads in the model")
 parser.add_argument("--epochs", type=int, default=100, help="Number of epochs to train")
 parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
-parser.add_argument("--output_dir", type=str, default="data/output", help="Output directory for model and checkpoints")
+parser.add_argument(
+    "--output_dir", type=str, default="/scratch/output", help="Output directory for model and checkpoints"
+)
 parser.add_argument(
     "--token_output_file",
     type=str,
-    default="data/output/tokenizer/tokenizer.json",
+    default="/scratch/output/tokenizer/tokenizer.json",
     help="Where the tokenizer json file will be saved",
 )
 config = parser.parse_args()
