@@ -1,14 +1,22 @@
+from typing import Literal
+
 import pytorch_lightning as pl
-import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 import torchmetrics as M
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class Model(pl.LightningModule):
-    def __init__(self, hidden_dim: int, dropout: float = 0.5, lr: float = 0.001, reduce_lr_patience: int = 50):
+    def __init__(
+        self,
+        hidden_dim: int,
+        num_of_classes: int,
+        task: Literal["regression", "binary_classification", "multiclass_classification"],
+        dropout: float = 0.5,
+        lr: float = 0.001,
+        reduce_lr_patience: int = 50,
+    ):  # you need to choose one of the tasks
         super().__init__()
         self.lr = lr
         self.reduce_lr_parience = reduce_lr_patience
@@ -16,38 +24,74 @@ class Model(pl.LightningModule):
             nn.LazyLinear(hidden_dim),
             nn.ReLU(),
             nn.Dropout(p=dropout),
-            nn.LazyLinear(1),
+            nn.LazyLinear(num_of_classes),
         )
+        if task == "binary_classification":
+            self.loss_fn = nn.BCEWithLogitsLoss()
+        elif task == "regression":
+            self.loss_fn = nn.MSELoss()
+        elif task == "multiclass_classification":
+            self.loss_fn = nn.CrossEntropyLoss()
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x).squeeze(1)
+        self.metrics = self.get_metrics(self.task)
 
-    def shared_step(self, batch: tuple[torch.Tensor, torch.Tensor], name: str = "train") -> torch.Tensor:
+    def forward(self, x):
+        return self.model(x).squeeze()
+
+    def get_metrics(self):
+        if self.task == "regression":
+            m = M.MetricCollection(
+                [
+                    M.R2Score(num_outputs=1),
+                    M.MeanSquaredError(),
+                    M.PearsonCorrCoef(),
+                    M.ConcordanceCorrCoef(),
+                    M.ExplainedVariance(),
+                ]
+            )
+        elif self.task == "binary_classification":
+            m = M.MetricCollection([M.BinaryF1Score(), M.BinaryAUROC()])
+        elif self.task == "multiclass_clasification":
+            m = M.MetricCollection(
+                [
+                    M.classification.Precision(num_classes=self.num_of_classes, average="macro"),
+                    M.classification.Recall(num_classes=self.num_of_classes, average="macro"),
+                    M.classification.F1(num_classes=self.num_of_classes, average="macro"),
+                ]
+            )
+        return {"train": m.clone(prefix="train/"), "val": m.clone(prefix="val/"), "test": m.clone(prefix="test/")}
+
+    def shared_step(self, batch, name: str = "train"):
         x, y = batch
-
-        # compute the prediction
         y_pred = self.forward(x).float()
         y = y.float()
-
-        # compute the loss
-        loss = F.mse_loss(y_pred, y)
-
-        # compute and log the metrics
+        loss = self.loss_fn(y_pred, y)
+        self.metrics[name].update(y_pred, y)
         self.log(f"{name}/loss", loss)
-        self.log(f"{name}/r2", M.functional.r2_score(y_pred, y))
-        self.log(f"{name}/pearson", M.functional.pearson_corrcoef(y_pred, y))
-        self.log(f"{name}/expvar", M.functional.explained_variance(y_pred, y))
-        self.log(f"{name}/concord", M.functional.concordance_corrcoef(y_pred, y))
         return loss
 
-    def training_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+    def training_step(self, batch):
         return self.shared_step(batch, "train")
 
-    def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+    def validation_step(self, batch):
         return self.shared_step(batch, "val")
 
-    def test_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+    def test_step(self, batch):
         return self.shared_step(batch, "test")
+
+    def shared_end(self, stage: "str"):
+        metrics = self.metrics[stage].compute()
+        self.log_dict(metrics)
+        self.metrics[stage].reset()
+
+    def on_train_epoch_end(self) -> None:
+        self.shared_end("train")
+
+    def on_validation_epoch_end(self) -> None:
+        self.share_end("val")
+
+    def on_test_epoch_end(self) -> None:
+        self.shared_end("test")
 
     def configure_optimizers(self):
         optimisers = [optim.Adam(self.parameters(), lr=self.lr)]
