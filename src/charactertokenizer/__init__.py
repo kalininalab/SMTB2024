@@ -4,7 +4,6 @@ This is heavily inspired from CanineTokenizer in transformers package.
 
 Inspired and modified from dariush-bahrami/character-tokenizer
 """
-
 import json
 import os
 from pathlib import Path
@@ -36,12 +35,11 @@ class CharacterTokenizer(PreTrainedTokenizer):
         self.characters = characters
         self.model_max_length = model_max_length
         bos_token = AddedToken("[BOS]", lstrip=False, rstrip=False)
-        eos_token = AddedToken("[SEP]", lstrip=False, rstrip=False)
+        eos_token = AddedToken("[EOS]", lstrip=False, rstrip=False)  # Changed from [SEP] to [EOS]
         sep_token = AddedToken("[SEP]", lstrip=False, rstrip=False)
         cls_token = AddedToken("[CLS]", lstrip=False, rstrip=False)
         pad_token = AddedToken("[PAD]", lstrip=False, rstrip=False)
         unk_token = AddedToken("[UNK]", lstrip=False, rstrip=False)
-
         mask_token = AddedToken("[MASK]", lstrip=True, rstrip=False)
 
         self._vocab_str_to_int = {
@@ -52,7 +50,8 @@ class CharacterTokenizer(PreTrainedTokenizer):
             "[PAD]": 4,
             "[RESERVED]": 5,
             "[UNK]": 6,
-            **{ch: i + 7 for i, ch in enumerate(characters)},
+            "[EOS]": 7,  # Added EOS token
+            **{ch: i + 8 for i, ch in enumerate(characters)},  # Starting index from 8 now
         }
         self._vocab_int_to_str = {v: k for k, v in self._vocab_str_to_int.items()}
 
@@ -83,7 +82,7 @@ class CharacterTokenizer(PreTrainedTokenizer):
         return self._vocab_str_to_int.get(token, self._vocab_str_to_int["[UNK]"])
 
     def _convert_id_to_token(self, index: int) -> str:
-        return self._vocab_int_to_str[index]
+        return self._vocab_int_to_str.get(index, "[UNK]")
 
     def convert_tokens_to_string(self, tokens):
         return "".join(tokens)
@@ -93,7 +92,8 @@ class CharacterTokenizer(PreTrainedTokenizer):
     ) -> List[int]:
         sep = [self.sep_token_id]
         cls = [self.cls_token_id]
-        result = cls + token_ids_0 + sep
+        eos = [self.eos_token_id]  # End of sentence token
+        result = cls + token_ids_0 + eos
         if token_ids_1 is not None:
             result += token_ids_1 + sep
         return result

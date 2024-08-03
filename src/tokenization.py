@@ -94,4 +94,15 @@ def train_tokenizer(
 
     tokenizer = PreTrainedTokenizerFast(tokenizer_file=output_file_directory)
 
+    # Add special tokens
+    tokenizer.add_special_tokens(
+        {
+            "pad_token": "[PAD]",
+            "mask_token": "[MASK]",
+            "cls_token": "[CLS]",
+            "sep_token": "[SEP]",
+            "unk_token": "[UNK]",
+        }
+    )
+
     return tokenizer
