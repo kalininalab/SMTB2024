@@ -1,7 +1,13 @@
 from argparse import ArgumentParser
 
 from datasets import DatasetDict, load_dataset
-from transformers import DataCollatorForLanguageModeling, EsmConfig, EsmForMaskedLM, Trainer, TrainingArguments
+from transformers import (
+    DataCollatorForLanguageModeling,
+    EsmConfig,
+    EsmForMaskedLM,
+    Trainer,
+    TrainingArguments,
+)
 
 from src.tokenization import train_tokenizer
 
@@ -28,12 +34,13 @@ if isinstance(dataset, DatasetDict):
         dataset[split] = dataset[split].map(rename_column_if_needed)
 
 
+# tokenizer = PreTrainedTokenizerFast(tokenizer_object=Tokenizer.from_file("data/bpe.json"))
 tokenizer = train_tokenizer(dataset["train"]["text"], vocab_size=args.vocab_size)
-tokenizer.mask_token = "[MASK]"
-tokenizer.pad_token = "[PAD]"
+# tokenizer.mask_token = "[MASK]"
+# tokenizer.pad_token = "[PAD]"
 
 tokenized_datasets = dataset.map(
-    lambda x: tokenizer(x["text"], max_length=1022, truncation=True, padding="max_length"),
+    lambda x: tokenizer(x["text"], max_length=255, truncation=True, padding="max_length"),
     batched=False,
     num_proc=8,
     remove_columns=["text", "EntryID", "__index_level_0__"],
@@ -42,10 +49,10 @@ tokenized_datasets = dataset.map(
 
 config = EsmConfig(
     vocab_size=args.vocab_size,  # Same as vocab size you used for the tokenizer
-    hidden_size=128,
+    hidden_size=320,
     num_hidden_layers=6,
     num_attention_heads=4,
-    max_position_embeddings=1024,
+    max_position_embeddings=256,
     pad_token_id=0,
     mask_token_id=1,
 )
@@ -57,10 +64,10 @@ training_args = TrainingArguments(
     output_dir="./esm-from-scratch",
     overwrite_output_dir=True,
     num_train_epochs=3,
-    per_device_train_batch_size=4,
+    per_device_train_batch_size=64,
     save_steps=10_000,
     save_total_limit=2,
-    no_cuda=True,
+    # no_cuda=True,
 )
 
 trainer = Trainer(
@@ -69,9 +76,5 @@ trainer = Trainer(
     data_collator=data_collator,
     train_dataset=tokenized_datasets["train"],
 )
-
-print(model.esm.embeddings)
-print(tokenized_datasets)
-print(tokenized_datasets["validation"]["input_ids"][0])
 
 trainer.train()

@@ -17,7 +17,8 @@ def train_tokenizer(
     special_tokens = ["[PAD]", "[MASK]", "[UNK]", "[CLS]", "[SEP]"]
     path = os.path.join(out_dir, f"{tokenization_type}.json")
     if os.path.exists(path):
-        tokenizer = PreTrainedTokenizerFast(tokenizer_file=path)
+        tokenizer = PreTrainedTokenizerFast(tokenizer_object=Tokenizer.from_file(path))
+        # tokenizer = PreTrainedTokenizerFast(tokenizer_file=path)
         tokenizer.mask_token = "[MASK]"
         tokenizer.pad_token = "[PAD]"
         return tokenizer
@@ -39,7 +40,8 @@ def train_tokenizer(
     tokenizer.pre_tokenizer = Whitespace()  # Necessary to avoid \n in tokens
     tokenizer.train_from_iterator(iterator=dataset, trainer=trainer)
     tokenizer.save(path)
-    tokenizer = PreTrainedTokenizerFast(path)
+    tokenizer = PreTrainedTokenizerFast(tokenizer_object=Tokenizer.from_file(path))
+    # tokenizer = PreTrainedTokenizerFast(path)
     tokenizer.mask_token = "[MASK]"
     tokenizer.pad_token = "[PAD]"
     return tokenizer
