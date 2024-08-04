@@ -18,6 +18,7 @@ def train(
     dataset: DownstreamDataset,
     dataset_path: str,
     model_name: str,
+    pooling: str,
     layer_num: int,
     hidden_dim: int = 512,
     batch_size: int = 1024,
@@ -98,6 +99,7 @@ model_names = {
 def run(
     num_layers: int,
     dataset_path: str,
+    pooling: str,
     hidden_dim: int = 512,
     batch_size: int = 1024,
     max_epoch: int = 200,
@@ -127,6 +129,7 @@ def run(
             dataset,
             dataset_path,
             model_name,
+            pooling,
             i,
             hidden_dim,
             batch_size,
