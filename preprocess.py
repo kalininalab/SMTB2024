@@ -1,6 +1,7 @@
 import os
 import shutil
 from argparse import ArgumentParser
+from pathlib import Path
 
 import pandas as pd
 
@@ -15,11 +16,12 @@ model_names = {
 
 
 parser = ArgumentParser()
-parser.add_argument("data_file", type=str)
-parser.add_argument("num_layers", type=int, choices=model_names.keys())
-parser.add_argument("out_dir", type=str)
+parser.add_argument("data_file", type=Path)
+parser.add_argument("num_layers", type=int, choices=model_names.keys(), help="number of model layers")
+parser.add_argument("out_dir", type=Path)
 args = parser.parse_args()
 
+out_dir = args.out_dir / "processed" / model_names[args.num_layers]
 
 df = pd.read_csv(args.data_file)
 
@@ -32,11 +34,11 @@ launch_script = [
     "extract.py",
     model_names[args.num_layers],
     "tmp.fasta",
-    args.out_dir,
+    str(out_dir),
     "--include",
     "per_tok",
     "--repr_layers",
 ]
 launch_script.extend([str(i) for i in range(args.num_layers)])
 os.system(" ".join(launch_script))
-shutil.copy(args.data_file, args.out_dir + "/df.csv")
+shutil.copy(args.data_file, out_dir / "df.csv")

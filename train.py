@@ -1,5 +1,6 @@
 import random
 import string
+from pathlib import Path
 
 import torch
 
@@ -10,7 +11,7 @@ from pytorch_lightning.loggers import CSVLogger
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
 
-from src.data import DownstreamDataset, load_dataset
+from src.data import DownstreamDataset
 from src.model import Model
 
 # technical setting to make sure, parallelization works if multiple models are trained in parallel
@@ -22,7 +23,6 @@ def random_string(k: int = 5):
 
 
 def train(
-    dataset: DownstreamDataset,
     dataset_path: str,
     model_name: str,
     pooling: str,
@@ -30,7 +30,7 @@ def train(
     random_name: str,
     hidden_dim: int = 512,
     batch_size: int = 1024,
-    max_epoch: int = 200,
+    max_epoch: int = 1000,
     dropout: float = 0.2,
     early_stopping_patience: int = 30,
     lr: float = 0.001,
@@ -38,13 +38,14 @@ def train(
     seed: int = 42,
     gpu: int = 0,
 ):
+    dataset_path_for_logs = Path(dataset_path)
     # for reproducibility
     seed_everything(seed)
 
     # define the logger
     logger = CSVLogger(
         save_dir="/scratch/logs",
-        name=f"{dataset_path.split('/')[-1][:-4]}_{model_name.split('_')[1]}_L{layer_num:02d}_{random_name}",
+        name=f"{dataset_path_for_logs.parents[0].name}_{model_name.split('_')[1]}_L{layer_num:02d}_{random_name}",
     )
 
     logger.log_hyperparams(
@@ -75,9 +76,11 @@ def train(
 
     # initialize the model
     model = Model(hidden_dim=hidden_dim, dropout=dropout)
-    train = ...
-    val = ...
-    test = ...
+
+    dataset_path = dataset_path / "processed"
+    train = DownstreamDataset(data_dir=dataset_path / "train")
+    val = DownstreamDataset(data_dir=dataset_path / "valid")
+    test = DownstreamDataset(data_dir=dataset_path / "test")
 
     def collate_fn(batch):
         tensors = [item[0].squeeze(0) for item in batch]
@@ -136,27 +139,22 @@ def run(
     """
     random_name = random_string()
     model_name = model_names[num_layers]
-    load_dataset(num_layers, dataset_path.split("/")[-1][:-4])
-    # TODO check if we have the data computed
 
-    ds_list = ...
-    for i, dataset_path in enumerate(ds_list):
-        print("Train layer", i)
-        train(
-            dataset_path=dataset_path,
-            model_name=model_name,
-            layer_num=i,
-            random_name=random_name,
-            hidden_dim=hidden_dim,
-            batch_size=batch_size,
-            max_epoch=max_epoch,
-            dropout=dropout,
-            early_stopping_patience=early_stopping_patience,
-            lr=lr,
-            reduce_lr_patience=reduce_lr_patience,
-            seed=seed,
-            gpu=gpu,
-        )
+    train(
+        dataset_path=dataset_path,
+        model_name=model_name,
+        pooling=pooling,
+        random_name=random_name,
+        hidden_dim=hidden_dim,
+        batch_size=batch_size,
+        max_epoch=max_epoch,
+        dropout=dropout,
+        early_stopping_patience=early_stopping_patience,
+        lr=lr,
+        reduce_lr_patience=reduce_lr_patience,
+        seed=seed,
+        gpu=gpu,
+    )
 
 
 if __name__ == "__main__":
