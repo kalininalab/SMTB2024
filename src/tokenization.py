@@ -24,8 +24,6 @@ def train_tokenizer(
     vocab_size: int = 5000,
 ) -> transformers.PreTrainedTokenizerFast | CharacterTokenizer:
     directory = os.path.dirname(output_file_directory)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
 
     if os.path.exists(output_file_directory):
         tokenizer = PreTrainedTokenizerFast(tokenizer_object=Tokenizer.from_file(output_file_directory))
@@ -33,6 +31,8 @@ def train_tokenizer(
         tokenizer.mask_token = "[MASK]"
         tokenizer.pad_token = "[PAD]"
         return tokenizer
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     if tokenization_type == "bpe":
         tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
         trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"], vocab_size=vocab_size)
