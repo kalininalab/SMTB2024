@@ -20,7 +20,7 @@ class Model(pl.LightningModule):
         pooling: Literal["mean", "attention"] = "attention",
         dropout: float = 0.5,
         lr: float = 0.001,
-        reduce_lr_patience: int = 50,
+        reduce_lr_patience: int = 10,
     ):
         super().__init__()
         self.lr = lr
@@ -72,7 +72,7 @@ class Model(pl.LightningModule):
                 "scheduler": ReduceLROnPlateau(
                     optimisers[0],
                     factor=0.1,
-                    patience=self.reduce_lr_parience,
+                    patience=10,
                     min_lr=1e-7,
                 ),
                 "monitor": "val/loss",

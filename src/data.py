@@ -1,8 +1,9 @@
 from pathlib import Path
 
+import lightning as L
 import pandas as pd
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import DataLoader, Dataset
 
 
 class DownstreamDataset(Dataset):
@@ -19,45 +20,29 @@ class DownstreamDataset(Dataset):
         return embeddings, label
 
 
-def get_protlist(df: str):
-    """
-    Get the protein sequences from the given DataFrame.
+class DownstreamDataModule(L.LightningDataModule):
+    def __init__(self, data_dir: str | Path, layer_num: int, batch_size: int, num_workers: int = 8):
+        super().__init__()
+        self.data_dir = Path(data_dir)
+        self.layer_num = layer_num
+        self.batch_size = batch_size
+        self.num = num_workers
 
-    :param df: Path to the DataFrame
-    :return: A list of protein sequences
-    """
-    data = pd.read_csv(df)
-    prot_list = []
-    d_dict = data.to_dict(orient="index")
-    for key in d_dict.keys():
-        n = d_dict[key][list(d_dict[key].keys())[0]]
-        prot_list.append(n)
-    return prot_list
+    def setup(self, stage: str | None = None):
+        if stage == "fit" or stage is None:
+            self.train = DownstreamDataset(self.data_dir / "train", self.layer_num)
+            self.valid = DownstreamDataset(self.data_dir / "valid", self.layer_num)
+        if stage == "test" or stage is None:
+            self.test = DownstreamDataset(self.data_dir / "valid", self.layer_num)
 
+    def _get_dataloader(self, dataset: DownstreamDataset, shuffle: bool = False) -> torch.utils.data.DataLoader:
+        return DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=shuffle)
 
-model_names = {
-    48: "esm2_t48_15B_UR50D",
-    36: "esm2_t36_3B_UR50D",
-    33: "esm2_t33_650M_UR50D",
-    30: "esm2_t30_150M_UR50D",
-    12: "esm2_t12_35M_UR50D",
-    6: "esm2_t6_8M_UR50D",
-}
+    def train_dataloader(self) -> DataLoader:
+        return self._get_dataloader(self.train, shuffle=True)
 
+    def val_dataloader(self) -> DataLoader:
+        return self._get_dataloader(self.valid)
 
-# def load_dataset(nlayers: int, dataset_name: str):
-#     root = Path("/") / "scratch" / "data_roman" / dataset_name  # TODO FIXME
-#     model_name = model_names[nlayers]
-#     for split in ["train", "val", "test"]:
-#         output_path = root / "processed" / model_name / split
-#         # output_path.mkdir(exist_ok=True, parents=True)
-#         print(root / "raw" / f"{split}.csv")
-#         protlist = get_protlist(root / "raw" / f"{split}.csv")
-#         fasta_path = root / f"{split}.fasta"
-#         with open(fasta_path, "w") as f:
-#             for i, seq in enumerate(protlist):
-#                 print(f">Prot{i:06d}", seq, sep="\n", file=f)
-#         print(f"COMMAND: python -m src.extract {model_name} {output_path} {str(output_path)} --include per_tok")
-#         os.system(
-#             f"python -m src.extract {model_name} {str(fasta_path)} {str(output_path)} --include per_tok"
-#         )  # TODO FIXME
+    def test_dataloader(self) -> DataLoader:
+        return self._get_dataloader(self.test)
