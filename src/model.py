@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -6,13 +8,27 @@ import torch.optim as optim
 import torchmetrics as M
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
+from src.pooling import GlobalAttentionPooling, MeanPooling
+
+poolings = {"mean": MeanPooling, "attention": GlobalAttentionPooling}
+
 
 class Model(pl.LightningModule):
-    def __init__(self, hidden_dim: int, dropout: float = 0.5, lr: float = 0.001, reduce_lr_patience: int = 50):
+    def __init__(
+        self,
+        hidden_dim: int,
+        pooling: Literal["mean", "attention"] = "attention",
+        dropout: float = 0.5,
+        lr: float = 0.001,
+        reduce_lr_patience: int = 50,
+    ):
         super().__init__()
         self.lr = lr
         self.reduce_lr_parience = reduce_lr_patience
+        self.pooling = pooling
         self.model = nn.Sequential(
+            nn.LazyLinear(hidden_dim),
+            poolings[pooling](hidden_dim),
             nn.LazyLinear(hidden_dim),
             nn.ReLU(),
             nn.Dropout(p=dropout),
