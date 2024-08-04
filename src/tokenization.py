@@ -2,7 +2,6 @@ import os
 from typing import Literal
 
 import transformers
-from datasets import Dataset, DatasetDict
 from tokenizers import Tokenizer
 from tokenizers.models import BPE, Unigram, WordLevel, WordPiece
 from tokenizers.pre_tokenizers import Whitespace
@@ -18,7 +17,7 @@ except ModuleNotFoundError:
 
 
 def train_tokenizer(
-    dataset: Dataset | DatasetDict,
+    dataset,
     tokenization_type: Literal["bpe", "wordpiece", "unigram", "wordlevel", "char"] = "bpe",
     output_file_directory: str = "data/tokenizer.json",
     vocab_size: int = 5000,
@@ -88,11 +87,11 @@ def train_tokenizer(
         tokenizer.save_pretrained(directory)
         return tokenizer
 
-    tokenizer.train_from_iterator(iterator=dataset["train"]["Sequence"], trainer=trainer)
+    tokenizer.train_from_iterator(iterator=dataset, trainer=trainer)
 
     tokenizer.save(output_file_directory)
 
-    tokenizer = PreTrainedTokenizerFast(tokenizer_file=output_file_directory)
+    tokenizer = PreTrainedTokenizerFast(tokenizer_object=Tokenizer.from_file(output_file_directory))
 
     # Add special tokens
     tokenizer.add_special_tokens(
