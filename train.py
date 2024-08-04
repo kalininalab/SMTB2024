@@ -5,7 +5,7 @@ import torch
 
 # import wandb
 from pytorch_lightning import Trainer, seed_everything
-from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, RichModelSummary, RichProgressBar
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, RichProgressBar
 from pytorch_lightning.loggers import CSVLogger
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, random_split
@@ -138,7 +138,7 @@ def run(
     random_name = random_string()
     model_name = model_names[num_layers]
     load_dataset(num_layers, dataset_path.split("/")[-1][:-4])
-    
+
     for i, dataset_path in enumerate(ds):
         print("Train layer", i)
         train(
@@ -157,6 +157,7 @@ def run(
             seed=seed,
             gpu=gpu,
         )
+
 
 if __name__ == "__main__":
     import jsonargparse

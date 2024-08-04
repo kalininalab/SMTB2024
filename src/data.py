@@ -1,7 +1,6 @@
 import os
-import pickle
-from typing import Any, Literal
 from pathlib import Path
+from typing import Any, Literal
 
 import esm
 import pandas as pd
@@ -136,4 +135,3 @@ def load_dataset(nlayers: int, dataset_name: str):
                 print(f">Prot{i:06d}", seq, sep="\n", file=f)
         print(f"COMMAND: python -m src.extract {model_name} {output_path} {str(output_path)} --include per_tok")
         os.system(f"python -m src.extract {model_name} {str(fasta_path)} {str(output_path)} --include per_tok")
-
