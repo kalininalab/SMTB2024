@@ -5,8 +5,9 @@ import torch
 
 # import wandb
 from pytorch_lightning import Trainer, seed_everything
-from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, RichProgressBar
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, RichModelSummary, RichProgressBar
 from pytorch_lightning.loggers import CSVLogger
+from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, random_split
 
 from src.data import DownstreamDataset, load_dataset
@@ -24,6 +25,7 @@ def train(
     dataset: DownstreamDataset,
     dataset_path: str,
     model_name: str,
+    pooling: str,
     layer_num: int,
     random_name: str,
     hidden_dim: int = 512,
@@ -76,9 +78,17 @@ def train(
     print(model)
     train, val, test = random_split(dataset, [0.7, 0.2, 0.1])
 
-    train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=True)
-    validation_dataloader = DataLoader(val, batch_size=batch_size)
-    test_dataloader = DataLoader(test, batch_size=batch_size)
+    train, val, test = random_split(dataset, [0.7, 0.2, 0.1])
+
+    def collate_fn(batch):
+        tensors = [item[0].squeeze(0) for item in batch]
+        floats = torch.tensor([item[1] for item in batch])
+        padded_sequences = pad_sequence(tensors, batch_first=True, padding_value=0)
+        return padded_sequences, floats
+
+    train_dataloader = DataLoader(train, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
+    validation_dataloader = DataLoader(val, batch_size=batch_size, collate_fn=collate_fn)
+    test_dataloader = DataLoader(test, batch_size=batch_size, collate_fn=collate_fn)
 
     trainer.fit(model, train_dataloaders=train_dataloader, val_dataloaders=validation_dataloader)
 
@@ -99,6 +109,7 @@ model_names = {
 def run(
     num_layers: int,
     dataset_path: str,
+    pooling: str,
     hidden_dim: int = 512,
     batch_size: int = 1024,
     max_epoch: int = 200,
@@ -127,8 +138,7 @@ def run(
     random_name = random_string()
     model_name = model_names[num_layers]
     load_dataset(num_layers, dataset_path.split("/")[-1][:-4])
-    exit(0)
-    print(len(ds))
+    
     for i, dataset_path in enumerate(ds):
         print("Train layer", i)
         train(
@@ -147,7 +157,6 @@ def run(
             seed=seed,
             gpu=gpu,
         )
-
 
 if __name__ == "__main__":
     import jsonargparse

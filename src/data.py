@@ -70,7 +70,6 @@ class ESMEmbedder:
                     embedding = {k1: v1.detach().cpu() for k1, v1 in v.items()}
                 else:
                     embedding = v.detach().cpu()
-            
 
 
 def get_protlist(df: str):
@@ -80,7 +79,6 @@ def get_protlist(df: str):
     :param df: Path to the DataFrame
     :return: A list of protein sequences
     """
-    # print(df)
     data = pd.read_csv(df)
     prot_list = []
     d_dict = data.to_dict(orient="index")
@@ -138,4 +136,4 @@ def load_dataset(nlayers: int, dataset_name: str):
                 print(f">Prot{i:06d}", seq, sep="\n", file=f)
         print(f"COMMAND: python -m src.extract {model_name} {output_path} {str(output_path)} --include per_tok")
         os.system(f"python -m src.extract {model_name} {str(fasta_path)} {str(output_path)} --include per_tok")
-        
+
