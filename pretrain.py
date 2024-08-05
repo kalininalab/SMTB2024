@@ -17,11 +17,13 @@ parser.add_argument("--n_dims", type=int, default=480, help="Dimensions of the m
 parser.add_argument("--n_heads", type=int, default=16, help="Number of heads in the model")
 parser.add_argument("--epochs", type=int, default=100, help="Number of epochs to train")
 parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
-parser.add_argument("--output_dir", type=str, default="data/output", help="Output directory for model and checkpoints")
+parser.add_argument(
+    "--output_dir", type=str, default="/scratch/output", help="Output directory for model and checkpoints"
+)
 parser.add_argument(
     "--token_output_file",
     type=str,
-    default="data/output/tokenizer/tokenizer.json",
+    default="/scratch/output/tokenizer/tokenizer.json",
     help="Where the tokenizer json file will be saved",
 )
 config = parser.parse_args()
@@ -60,7 +62,7 @@ tokenized_datasets = dataset.map(
     remove_columns=["text", "EntryID", "__index_level_0__"],
 )
 
-# Remove the length column
+# Remove uneeded columns
 dataset = dataset.remove_columns(["EntryID", "__index_level_0__"])
 
 ### Setup Model ###
@@ -74,9 +76,7 @@ esm_config = EsmConfig(
     mask_token_id=tokenizer.mask_token_id,
 )
 
-model = EsmForMaskedLM(
-    config=esm_config,
-)
+model = EsmForMaskedLM(config=esm_config)
 
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
 
@@ -88,6 +88,9 @@ training_args = TrainingArguments(
     per_device_train_batch_size=config.batch_size,
     save_steps=10_000,
     save_total_limit=2,
+    fp16=True,  # Use mixed precision training
+    dataloader_num_workers=4,  # Optimize data loading
+    gradient_accumulation_steps=2,  # Gradient accumulation
 )
 
 trainer = Trainer(
