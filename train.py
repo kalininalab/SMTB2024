@@ -5,9 +5,9 @@ from pathlib import Path
 import torch
 
 # import wandb
-from pytorch_lightning import Trainer, seed_everything
-from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, RichProgressBar
-from pytorch_lightning.loggers import CSVLogger
+from lightning.pytorch import Trainer, seed_everything
+from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, RichProgressBar
+from lightning.pytorch.loggers import CSVLogger
 
 from src.data import DownstreamDataModule
 from src.model import Model
@@ -68,7 +68,7 @@ def train(
         logger=logger,
     )
     model = Model(hidden_dim=hidden_dim, pooling=pooling, dropout=dropout)
-    datamodule = DownstreamDataModule(dataset_path / "processed", layer_num, batch_size)
+    datamodule = DownstreamDataModule(dataset_path, layer_num, batch_size)
     trainer.fit(model, datamodule=datamodule)
     trainer.test(ckpt_path="best", datamodule=datamodule)
 
