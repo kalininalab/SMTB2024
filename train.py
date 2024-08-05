@@ -68,7 +68,6 @@ def train(
         max_epochs=max_epoch,
         callbacks=callbacks,
         logger=logger,
-        
     )
     model = Model(hidden_dim=hidden_dim, pooling=pooling, dropout=dropout)
     datamodule = DownstreamDataModule(dataset_path, layer_num, batch_size, num_workers)
