@@ -28,6 +28,7 @@ def train(
     random_name: str,
     hidden_dim: int = 512,
     batch_size: int = 1024,
+    num_workers: int = 12,
     max_epoch: int = 1000,
     dropout: float = 0.2,
     early_stopping_patience: int = 20,
@@ -38,9 +39,10 @@ def train(
 ):
     dataset_path = Path(dataset_path)
     seed_everything(seed)
+    print(dataset_path.parents[0] / "logs")
     logger = CSVLogger(
         save_dir=dataset_path.parents[0] / "logs",
-        name=f"{model_name}_L{layer_num}_{random_name}",
+        name=f"{model_name}_L{layer_num}_{pooling}_{random_name}",
     )
 
     logger.log_hyperparams(
@@ -66,9 +68,10 @@ def train(
         max_epochs=max_epoch,
         callbacks=callbacks,
         logger=logger,
+        
     )
     model = Model(hidden_dim=hidden_dim, pooling=pooling, dropout=dropout)
-    datamodule = DownstreamDataModule(dataset_path, layer_num, batch_size)
+    datamodule = DownstreamDataModule(dataset_path, layer_num, batch_size, num_workers)
     trainer.fit(model, datamodule=datamodule)
     trainer.test(ckpt_path="best", datamodule=datamodule)
 

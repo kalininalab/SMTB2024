@@ -2,6 +2,7 @@ import os
 import random
 import string
 from pathlib import Path
+import pickle
 
 from joblib import Parallel, delayed
 
@@ -42,16 +43,16 @@ dataset_names = ["fluorescence", "stability"]
 # }
 
 model_names = {
-    30: "esm2_t30_150M_UR50D",
-    12: "esm2_t12_35M_UR50D",
     6: "esm2_t6_8M_UR50D",
+    12: "esm2_t12_35M_UR50D",
+    30: "esm2_t30_150M_UR50D",
 }
 
 pooling_options = ["attention", "mean"]
 
-all_options = []
+gpu_options = [[], [], [], []]
 
-cnt = 0
+count = 0
 
 for dataset in dataset_names:
     for model in model_names.keys():
@@ -60,11 +61,13 @@ for dataset in dataset_names:
 
         for layer_num in range(model):
             for pooling in pooling_options:
-                all_options.append((str(dataset_path), model_names[model], pooling, layer_num, cnt))
-                cnt = (cnt + 1) % 4
+                gpu_options[count % 4].append((str(dataset_path), model_names[model], pooling, layer_num))
+                count += 1
+for i, options in enumerate(gpu_options):
+    with open(f"args_gpu_{i}.pkl", "wb") as f:
+        pickle.dump(options, f)
 
-
-Parallel(n_jobs=4)(
-    delayed(run_script)(dataset_path, model_name, pooling, layer_num, gpu)
-    for dataset_path, model_name, pooling, layer_num, gpu in all_options
-)
+# Parallel(n_jobs=4)(
+#     delayed(run_script)(dataset_path, model_name, pooling, layer_num, gpu)
+#     for dataset_path, model_name, pooling, layer_num, gpu in all_options
+# )
