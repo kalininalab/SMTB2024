@@ -1,6 +1,7 @@
 import argparse
 import os
 
+# import torch
 from datasets import DatasetDict, load_dataset
 from transformers import DataCollatorForLanguageModeling, EsmConfig, EsmForMaskedLM, Trainer, TrainingArguments
 
@@ -27,6 +28,10 @@ parser.add_argument(
     help="Where the tokenizer json file will be saved",
 )
 config = parser.parse_args()
+
+# Check for GPU availability
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# print(f"Using device: {device}")
 
 ## Load the dataset ##
 dataset = load_dataset(config.data)
@@ -77,6 +82,7 @@ esm_config = EsmConfig(
 )
 
 model = EsmForMaskedLM(config=esm_config)
+# model.to(device)  # Move model to GPU
 
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
 
