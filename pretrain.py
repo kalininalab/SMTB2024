@@ -1,21 +1,22 @@
 import argparse
 import os
 
-# import torch
+import torch
 from datasets import DatasetDict, load_dataset
 from transformers import DataCollatorForLanguageModeling, EsmConfig, EsmForMaskedLM, Trainer, TrainingArguments
 
 from src.tokenization import train_tokenizer
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
+os.environ["CUDA_LAUNCH_BLOCKING"] = "1"  # Add this for better error messages
 
 parser = argparse.ArgumentParser(description="Pretrain a model")
 parser.add_argument("--data", type=str, default="khairi/uniprot-swissprot", help="Name of data to be trained on")
 parser.add_argument("--tokenizer", default="bpe", type=str, choices=["char", "bpe"], help="Tokenizer to use")
 parser.add_argument("--vocab_size", default=5000, type=int, help="Vocabulary size")
 parser.add_argument("--n_layers", type=int, default=12, help="Number of layers in the model")
-parser.add_argument("--n_dims", type=int, default=480, help="Dimensions of the model")
-parser.add_argument("--n_heads", type=int, default=16, help="Number of heads in the model")
+parser.add_argument("--n_dims", type=int, default=128, help="Dimensions of the model")
+parser.add_argument("--n_heads", type=int, default=4, help="Number of heads in the model")
 parser.add_argument("--epochs", type=int, default=100, help="Number of epochs to train")
 parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
 parser.add_argument(
@@ -30,17 +31,18 @@ parser.add_argument(
 config = parser.parse_args()
 
 # Check for GPU availability
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# print(f"Using device: {device}")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
 ## Load the dataset ##
+print("Loading dataset...")
 dataset = load_dataset(config.data)
+print(f"Dataset loaded: {dataset}")
 
 
 def rename_column_if_needed(example):
     if "text" not in example.keys():
         example["text"] = example.pop("Sequence")
-    # also remove any other columns that are not needed
     return example
 
 
@@ -50,25 +52,25 @@ if isinstance(dataset, DatasetDict):
     for split in dataset.keys():
         dataset[split] = dataset[split].map(rename_column_if_needed)
 
-
 ### Train the tokenizer & Load the pretrained tokenizer ###
-# You can choose the tokenizer type, default is bpe
+print("Training tokenizer...")
 tokenizer = train_tokenizer(
     dataset=dataset["train"]["text"],
     tokenization_type=config.tokenizer,
     vocab_size=config.vocab_size,
     output_file_directory=config.token_output_file,
 )
+print(f"Tokenizer trained and saved at: {config.token_output_file}")
 
 tokenized_datasets = dataset.map(
     lambda x: tokenizer(x["text"], max_length=255, truncation=True, padding="max_length"),
-    batched=False,
+    batched=True,
     num_proc=8,
     remove_columns=["text", "EntryID", "__index_level_0__"],
 )
 
-# Remove uneeded columns
-dataset = dataset.remove_columns(["EntryID", "__index_level_0__"])
+print("Tokenized datasets created.")
+print(f"Example tokenized input: {tokenized_datasets['train'][0]}")
 
 ### Setup Model ###
 esm_config = EsmConfig(
@@ -82,7 +84,8 @@ esm_config = EsmConfig(
 )
 
 model = EsmForMaskedLM(config=esm_config)
-# model.to(device)  # Move model to GPU
+model.to(device)  # Move model to GPU
+print(f"Model loaded to device: {device}")
 
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
 
@@ -95,8 +98,11 @@ training_args = TrainingArguments(
     save_steps=10_000,
     save_total_limit=2,
     bf16=True,  # Use mixed precision training
-    dataloader_num_workers=4,  # Optimize data loading
+    dataloader_num_workers=24,  # Optimize data loading
     gradient_accumulation_steps=2,  # Gradient accumulation
+    logging_steps=500,  # Add logging steps
+    evaluation_strategy="steps",
+    eval_steps=500,  # Evaluation and logging every 500 steps
 )
 
 trainer = Trainer(
@@ -107,4 +113,6 @@ trainer = Trainer(
     # eval_dataset=dataset["validation"],
 )
 
+print("Starting training...")
 trainer.train()
+print("Training completed.")
