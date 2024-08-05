@@ -106,7 +106,7 @@ class MyDataModule(pl.LightningDataModule):
             self.train_dataset,
             batch_size=self.batch_size,
             shuffle=True,
-            num_workers=4,  # Adjust as needed
+            num_workers=24,  # Adjust as needed
             pin_memory=True,
         )
 
@@ -120,13 +120,22 @@ class MyLightningModule(pl.LightningModule):
         self.learning_rate = learning_rate
 
     def training_step(self, batch, batch_idx):
-        outputs = self.model(**batch)
+        # del batch["token_type_ids"]
+        # print(type(batch["input_ids"]), len(batch["input_ids"]))
+        # print(batch["input_ids"])
+        tmp = self.data_collator(batch)
+        t_batch = {
+            "input_ids": torch.stack(batch["input_ids"]).long(),
+            "attention_mask": torch.stack(batch["attention_mask"]).float(),
+        }
+        outputs = self.model(**t_batch)
+        print(outputs)
         loss = outputs.loss
         self.log("train_loss", loss)
         return loss
 
     def configure_optimizers(self):
-        return torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
 
 data_module = MyDataModule(tokenized_datasets, config.batch_size)
@@ -135,7 +144,7 @@ lightning_model = MyLightningModule(model, data_collator)
 # Setup PyTorch Lightning Trainer
 trainer = pl.Trainer(
     max_epochs=config.epochs,
-    gpus=1 if torch.cuda.is_available() else 0,
+    devices=[1],
     default_root_dir=config.output_dir,
     callbacks=[ModelCheckpoint(monitor="train_loss")],
 )
