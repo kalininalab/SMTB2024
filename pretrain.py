@@ -1,9 +1,12 @@
 import argparse
 import os
 
+import pytorch_lightning as pl
 import torch
 from datasets import DatasetDict, load_dataset
-from transformers import DataCollatorForLanguageModeling, EsmConfig, EsmForMaskedLM, Trainer, TrainingArguments
+from pytorch_lightning.callbacks import ModelCheckpoint
+from torch.utils.data import DataLoader
+from transformers import DataCollatorForLanguageModeling, EsmConfig, EsmForMaskedLM
 
 from src.tokenization import train_tokenizer
 
@@ -84,35 +87,59 @@ esm_config = EsmConfig(
 )
 
 model = EsmForMaskedLM(config=esm_config)
-model.to(device)  # Move model to GPU
-print(f"Model loaded to device: {device}")
 
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm_probability=0.15)
 
-### Setup trainer ###
-training_args = TrainingArguments(
-    output_dir=config.output_dir,
-    overwrite_output_dir=True,
-    num_train_epochs=config.epochs,
-    per_device_train_batch_size=config.batch_size,
-    save_steps=10_000,
-    save_total_limit=2,
-    bf16=True,  # Use mixed precision training
-    dataloader_num_workers=24,  # Optimize data loading
-    gradient_accumulation_steps=2,  # Gradient accumulation
-    logging_steps=500,  # Add logging steps
-    evaluation_strategy="steps",
-    eval_steps=500,  # Evaluation and logging every 500 steps
-)
 
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    data_collator=data_collator,
-    train_dataset=tokenized_datasets["train"],
-    # eval_dataset=dataset["validation"],
+# Define a PyTorch Lightning DataModule
+class MyDataModule(pl.LightningDataModule):
+    def __init__(self, tokenized_datasets, batch_size):
+        super().__init__()
+        self.tokenized_datasets = tokenized_datasets
+        self.batch_size = batch_size
+
+    def setup(self, stage=None):
+        self.train_dataset = self.tokenized_datasets["train"]
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=4,  # Adjust as needed
+            pin_memory=True,
+        )
+
+
+# Define a PyTorch Lightning Module
+class MyLightningModule(pl.LightningModule):
+    def __init__(self, model, data_collator, learning_rate=1e-4):
+        super().__init__()
+        self.model = model
+        self.data_collator = data_collator
+        self.learning_rate = learning_rate
+
+    def training_step(self, batch, batch_idx):
+        outputs = self.model(**batch)
+        loss = outputs.loss
+        self.log("train_loss", loss)
+        return loss
+
+    def configure_optimizers(self):
+        return torch.optim.AdamW(self.parameters(), lr=self.learning_rate)
+
+
+data_module = MyDataModule(tokenized_datasets, config.batch_size)
+lightning_model = MyLightningModule(model, data_collator)
+
+# Setup PyTorch Lightning Trainer
+trainer = pl.Trainer(
+    max_epochs=config.epochs,
+    gpus=1 if torch.cuda.is_available() else 0,
+    default_root_dir=config.output_dir,
+    callbacks=[ModelCheckpoint(monitor="train_loss")],
 )
 
 print("Starting training...")
-trainer.train()
+trainer.fit(lightning_model, datamodule=data_module)
 print("Training completed.")
