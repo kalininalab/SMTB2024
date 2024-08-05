@@ -3,7 +3,15 @@ from pathlib import Path
 import lightning as L
 import pandas as pd
 import torch
+from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset
+
+
+def collate_fn(batch: list[tuple[torch.Tensor, float]]):
+    tensors = [item[0].squeeze(0) for item in batch]
+    floats = torch.tensor([item[1] for item in batch])
+    padded_sequences = pad_sequence(tensors, batch_first=True, padding_value=0)
+    return padded_sequences, floats
 
 
 class DownstreamDataset(Dataset):
@@ -15,9 +23,14 @@ class DownstreamDataset(Dataset):
         self.df = pd.read_csv(data_dir / "df.csv")
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, float]:
-        embeddings = torch.load(self.data_dir / f"prot_{idx}.pt")["representations"][self.layer_num]
+        embeddings = torch.load(self.data_dir / f"prot_{idx}.pt", weights_only=False)["representations"][
+            self.layer_num
+        ]
         label = self.df.iloc[idx]["value"]
         return embeddings, label
+
+    def __len__(self):
+        return self.df.shape[0]
 
 
 class DownstreamDataModule(L.LightningDataModule):
@@ -26,7 +39,7 @@ class DownstreamDataModule(L.LightningDataModule):
         self.data_dir = Path(data_dir)
         self.layer_num = layer_num
         self.batch_size = batch_size
-        self.num = num_workers
+        self.num_workers = num_workers
 
     def setup(self, stage: str | None = None):
         if stage == "fit" or stage is None:
@@ -36,7 +49,9 @@ class DownstreamDataModule(L.LightningDataModule):
             self.test = DownstreamDataset(self.data_dir / "valid", self.layer_num)
 
     def _get_dataloader(self, dataset: DownstreamDataset, shuffle: bool = False) -> torch.utils.data.DataLoader:
-        return DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=shuffle)
+        return DataLoader(
+            dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=shuffle, collate_fn=collate_fn
+        )
 
     def train_dataloader(self) -> DataLoader:
         return self._get_dataloader(self.train, shuffle=True)
