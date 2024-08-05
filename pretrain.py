@@ -94,7 +94,7 @@ training_args = TrainingArguments(
     per_device_train_batch_size=config.batch_size,
     save_steps=10_000,
     save_total_limit=2,
-    fp16=True,  # Use mixed precision training
+    bf16=True,  # Use mixed precision training
     dataloader_num_workers=4,  # Optimize data loading
     gradient_accumulation_steps=2,  # Gradient accumulation
 )
