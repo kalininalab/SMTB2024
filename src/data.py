@@ -46,7 +46,7 @@ class DownstreamDataModule(L.LightningDataModule):
             self.train = DownstreamDataset(self.data_dir / "train", self.layer_num)
             self.valid = DownstreamDataset(self.data_dir / "valid", self.layer_num)
         if stage == "test" or stage is None:
-            self.test = DownstreamDataset(self.data_dir / "valid", self.layer_num)
+            self.test = DownstreamDataset(self.data_dir / "test", self.layer_num)
 
     def _get_dataloader(self, dataset: DownstreamDataset, shuffle: bool = False) -> torch.utils.data.DataLoader:
         return DataLoader(

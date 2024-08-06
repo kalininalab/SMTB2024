@@ -29,5 +29,5 @@ class MeanPooling(nn.Module):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__()
 
-    def forward(x):
+    def forward(self, x):
         return x.mean(1)
