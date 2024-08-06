@@ -16,7 +16,7 @@ poolings = {"mean": MeanPooling, "attention": GlobalAttentionPooling}
 class Model(pl.LightningModule):
     def __init__(
         self,
-        hidden_dim: int,
+        hidden_dim: int = 512,
         pooling: Literal["mean", "attention"] = "attention",
         dropout: float = 0.5,
         lr: float = 0.001,

@@ -20,7 +20,7 @@ class DownstreamDataset(Dataset):
         self.layer_num = layer_num
         assert self.data_dir.exists(), f"{self.data_dir} does not exist."
         assert self.data_dir.is_dir(), f"{self.data_dir} is not a directory."
-        self.df = pd.read_csv(data_dir / "df.csv")
+        self.df = pd.read_csv(data_dir / "df.csv").dropna()
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, float]:
         embeddings = torch.load(self.data_dir / f"prot_{idx}.pt", weights_only=False)["representations"][
@@ -41,12 +41,10 @@ class DownstreamDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-    def setup(self, stage: str | None = None):
-        if stage == "fit" or stage is None:
-            self.train = DownstreamDataset(self.data_dir / "train", self.layer_num)
-            self.valid = DownstreamDataset(self.data_dir / "valid", self.layer_num)
-        if stage == "test" or stage is None:
-            self.test = DownstreamDataset(self.data_dir / "test", self.layer_num)
+    def setup(self):
+        self.train = DownstreamDataset(self.data_dir / "train", self.layer_num)
+        self.valid = DownstreamDataset(self.data_dir / "valid", self.layer_num)
+        self.test = DownstreamDataset(self.data_dir / "test", self.layer_num)
 
     def _get_dataloader(self, dataset: DownstreamDataset, shuffle: bool = False) -> torch.utils.data.DataLoader:
         return DataLoader(
