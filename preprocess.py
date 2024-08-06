@@ -21,7 +21,7 @@ parser.add_argument("num_layers", type=int, choices=model_names.keys(), help="nu
 parser.add_argument("out_dir", type=Path)
 args = parser.parse_args()
 
-out_dir = args.out_dir / "processed" / model_names[args.num_layers]
+out_dir = args.out_dir / "processed" / model_names[args.num_layers] / args.data_file.stem
 
 df = pd.read_csv(args.data_file)
 
