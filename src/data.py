@@ -41,7 +41,7 @@ class DownstreamDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-    def setup(self):
+    def setup(self, stage=None):
         self.train = DownstreamDataset(self.data_dir / "train", self.layer_num)
         self.valid = DownstreamDataset(self.data_dir / "valid", self.layer_num)
         self.test = DownstreamDataset(self.data_dir / "test", self.layer_num)
