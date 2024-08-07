@@ -13,3 +13,6 @@ data/*
 *.html
 *.json
 wandb/
+output
+*.out
+test_preprocess.py

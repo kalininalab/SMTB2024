@@ -83,7 +83,7 @@ def train_tokenizer(
         tokenizer.save_pretrained(directory)
         return tokenizer
 
-    tokenizer.train_from_iterator(iterator=dataset["train"]["Sequence"], trainer=trainer)
+    tokenizer.train_from_iterator(iterator=dataset["train"]["text"], trainer=trainer)
 
     tokenizer.save(output_file_directory)
 

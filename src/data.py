@@ -1,139 +1,61 @@
-import os
-import pickle
-from typing import Any, Literal
+from pathlib import Path
 
-import esm
+import lightning as L
 import pandas as pd
 import torch
-from torch.utils.data import Dataset
-from tqdm import tqdm
+from torch.nn.utils.rnn import pad_sequence
+from torch.utils.data import DataLoader, Dataset
+
+
+def collate_fn(batch: list[tuple[torch.Tensor, float]]):
+    tensors = [item[0].squeeze(0) for item in batch]
+    floats = torch.tensor([item[1] for item in batch])
+    padded_sequences = pad_sequence(tensors, batch_first=True, padding_value=0)
+    return padded_sequences, floats
 
 
 class DownstreamDataset(Dataset):
-    def __init__(self, embeddings: list[torch.Tensor], labels: list):
-        """
-        Initialize the DownstreamDataset as a collection of the embeddings and labels.
-        :param embeddings: A list of embeddings.
-        :param labels: A list of labels.
-        """
-        self.embeddings = embeddings
-        self.labels = labels
+    def __init__(self, data_dir: str | Path, layer_num: int):
+        self.data_dir = Path(data_dir)
+        self.layer_num = layer_num
+        assert self.data_dir.exists(), f"{self.data_dir} does not exist."
+        assert self.data_dir.is_dir(), f"{self.data_dir} is not a directory."
+        self.df = pd.read_csv(data_dir / "df.csv").dropna()
+
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, float]:
+        embeddings = torch.load(self.data_dir / f"prot_{idx}.pt", weights_only=False)["representations"][
+            self.layer_num
+        ]
+        label = self.df.iloc[idx]["value"]
+        return embeddings, label
 
     def __len__(self):
-        return len(self.embeddings)
-
-    def __getitem__(self, idx: int):
-        return self.embeddings[idx], self.labels[idx]
+        return self.df.shape[0]
 
 
-class ESMEmbedder:
-    def __init__(self, num_layers: Literal[6, 12, 30, 33]):
-        self.num_layers = num_layers
-        self.models = {
-            6: "esm2_t6_8M_UR50D",
-            12: "esm2_t12_35M_UR50D",
-            30: "esm2_t30_150M_UR50D",
-            33: "esm2_t33_650M_UR50D",
-        }
+class DownstreamDataModule(L.LightningDataModule):
+    def __init__(self, data_dir: str | Path, layer_num: int, batch_size: int, num_workers: int = 8):
+        super().__init__()
+        self.data_dir = Path(data_dir)
+        self.layer_num = layer_num
+        self.batch_size = batch_size
+        self.num_workers = num_workers
 
-        if self.num_layers not in self.models:
-            raise ValueError(
-                f"Unsupported number of layers: {self.num_layers}. Supported layers are: {list(self.models.keys())}"
-            )
+    def setup(self):
+        self.train = DownstreamDataset(self.data_dir / "train", self.layer_num)
+        self.valid = DownstreamDataset(self.data_dir / "valid", self.layer_num)
+        self.test = DownstreamDataset(self.data_dir / "test", self.layer_num)
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model, self.alphabet = getattr(esm.pretrained, self.models[self.num_layers])()
-        self.batch_converter = self.alphabet.get_batch_converter()
-        self.model.eval().to(self.device)
+    def _get_dataloader(self, dataset: DownstreamDataset, shuffle: bool = False) -> torch.utils.data.DataLoader:
+        return DataLoader(
+            dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=shuffle, collate_fn=collate_fn
+        )
 
-    def run(
-        self,
-        data: list[str],
-        layers: list[int] | None = None,
-        contacts: bool = False,
-    ) -> list[dict[Any, dict[Any, Any] | Any]]:
-        """
-        Compute the embeddings from one ESM Model for the given protein sequences.
-        :param data: A list of protein sequences, give as strings.
-        :param layers: A list of layers to look at. If none, all layers are used.
-        :param contacts: Boolean flag to extract contacts (mostly not used)
-        :return: A list of dictionaries with the embeddings for each protein sequence.
-        """
-        if layers is None:
-            layers = range(self.num_layers + 1)
-        results = []
-        for prot in tqdm(data):
-            batch_labels, batch_strs, batch_tokens = self.batch_converter([("alper", prot)])
-            batch_tokens = batch_tokens.to(self.device)  # Ensure tokens are on the GPU
-            with torch.no_grad():
-                i = self.model.forward(batch_tokens, repr_layers=layers, return_contacts=contacts)
-                detached_i = {}
-                for k, v in i.items():
-                    if isinstance(v, dict):  # Check if value is a dictionary (like "representations")
-                        detached_i[k] = {k1: v1.detach().cpu() for k1, v1 in v.items()}
-                    else:
-                        detached_i[k] = v.detach().cpu()
-                results.append(detached_i)
-        return results
+    def train_dataloader(self) -> DataLoader:
+        return self._get_dataloader(self.train, shuffle=True)
 
+    def val_dataloader(self) -> DataLoader:
+        return self._get_dataloader(self.valid)
 
-def get_protlist(df: str):
-    """
-    Get the protein sequences from the given DataFrame.
-
-    :param df: Path to the DataFrame
-    :return: A list of protein sequences
-    """
-    data = pd.read_csv(df)
-    prot_list = []
-    d_dict = data.to_dict(orient="index")
-    for key in d_dict.keys():
-        n = d_dict[key][list(d_dict[key].keys())[0]]
-        prot_list.append(n)
-    return prot_list
-
-
-def embeddings_to_dataset(dataframe: pd.DataFrame, embeddings: list[dict[Any, dict[Any, Any] | Any]], layer: int):
-    """
-    Convert the embeddings to a DownstreamDataset object.
-
-    :param dataframe: DataFrame of the dataset
-    :param embeddings: List of embeddings for each protein sequence
-    :param layer: Layer of the model to use for the embeddings
-    :return: DownstreamDataset object
-    """
-    labels = list(dataframe[dataframe.columns[1]])
-    embedd_list = []
-    for i in range(len(embeddings)):
-        embedd_list.append(embeddings[i]["representations"][layer].mean([0, 1]))
-    return DownstreamDataset(embedd_list, labels)
-
-
-def load_dataset(path: str, nlayers: int):
-    """
-    Preprocess the dataset from the given path and compute the embeddings for the model with nlayers-many layers.
-
-    :param path: Path to the dataset
-    :param nlayers: Maximum number of layers of the model to use for embedding
-    :return: A list of DownstreamDataset objects, one for each layer of the model
-    """
-    save_path = path[:-3] + "pkl"
-
-    # Load results from pkl file
-    if os.path.exists(save_path):
-        with open(save_path, "rb") as f:
-            return pickle.load(f)
-
-    df = pd.read_csv(path)
-    protlist = get_protlist(path)
-    protlist_emb = ESMEmbedder(nlayers).run(protlist)
-    dataset_list = []
-    for i in range(nlayers):
-        df_embedded = embeddings_to_dataset(df, protlist_emb, i)
-        dataset_list.append(df_embedded)
-
-    # save results
-    with open(save_path, "wb") as f:
-        pickle.dump(dataset_list, f)
-
-    return dataset_list
+    def test_dataloader(self) -> DataLoader:
+        return self._get_dataloader(self.test)
