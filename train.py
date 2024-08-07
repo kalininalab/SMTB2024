@@ -15,6 +15,7 @@ from src.model import Model
 # technical setting to make sure, parallelization works if multiple models are trained in parallel
 torch.multiprocessing.set_sharing_strategy("file_system")
 
+
 def random_string(k: int = 5):
     return "".join(random.choices(string.ascii_letters + string.digits, k=k))
 
@@ -75,7 +76,7 @@ def train(
 
 
 if __name__ == "__main__":
-    torch.multiprocessing.set_start_method('spawn')# good solution !!!!
+    torch.multiprocessing.set_start_method("spawn")  # good solution !!!!
     import jsonargparse
 
     jsonargparse.CLI(train)
