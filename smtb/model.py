@@ -8,7 +8,7 @@ import torch.optim as optim
 import torchmetrics as M
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from src.pooling import GlobalAttentionPooling, MeanPooling
+from .pooling import GlobalAttentionPooling, MeanPooling
 
 poolings = {"mean": MeanPooling, "attention": GlobalAttentionPooling}
 

@@ -9,8 +9,8 @@ from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, RichProgressBar
 from lightning.pytorch.loggers import CSVLogger
 
-from src.data import DownstreamDataModule
-from src.model import Model
+from smtb.data import DownstreamDataModule
+from smtb.model import Model
 
 # technical setting to make sure, parallelization works if multiple models are trained in parallel
 torch.multiprocessing.set_sharing_strategy("file_system")

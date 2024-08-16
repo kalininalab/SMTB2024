@@ -16,3 +16,4 @@ wandb/
 output
 *.out
 test_preprocess.py
+*.egg-info

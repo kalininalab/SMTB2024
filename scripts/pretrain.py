@@ -4,7 +4,7 @@ import os
 from datasets import load_dataset
 from transformers import DataCollatorForLanguageModeling, EsmConfig, EsmForMaskedLM, Trainer, TrainingArguments
 
-from src.tokenization import train_tokenizer
+from smtb.tokenization import train_tokenizer
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
 

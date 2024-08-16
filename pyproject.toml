@@ -6,4 +6,4 @@ lint.select = ["E","F","W","B"]
 lint.ignore = ["E501", "F841"]
 
 [tool.pytest.ini_options]
-testpaths = ["src/tests"]
+testpaths = ["smtb/tests"]
