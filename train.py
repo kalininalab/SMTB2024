@@ -76,6 +76,7 @@ def train(
 
 
 if __name__ == "__main__":
+    torch.multiprocessing.set_start_method("spawn")  # good solution !!!!
     import jsonargparse
 
     jsonargparse.CLI(train)
