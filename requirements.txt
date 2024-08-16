@@ -1,6 +1,7 @@
 torch
 lightning
 torchmetrics
+rich
 fair-esm
 jsonargparse
 wandb
