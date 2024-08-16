@@ -14,6 +14,11 @@ poolings = {"mean": MeanPooling, "attention": GlobalAttentionPooling}
 
 
 class BaseModel(pl.LightningModule):
+    def __init__(self, config: Namespace):
+        super().__init__()
+        self.save_hyperparameters()
+        self.config = config
+
     def training_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         return self.shared_step(batch, "train")
 
@@ -41,12 +46,8 @@ class BaseModel(pl.LightningModule):
 
 
 class RegressionModel(BaseModel):
-    def __init__(
-        self,
-        config: Namespace,
-    ):
-        super().__init__()
-        self.save_hyperparameters()
+    def __init__(self, config: Namespace):
+        super().__init__(config)
         self.model = nn.Sequential(
             nn.LazyLinear(config.hidden_dim),
             poolings[config.pooling](config.hidden_dim),

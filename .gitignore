@@ -13,7 +13,7 @@ data/*
 *.html
 *.json
 wandb/
+lightning_logs/
 output
 *.out
-test_preprocess.py
 *.egg-info

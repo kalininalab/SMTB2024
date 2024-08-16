@@ -19,6 +19,7 @@ parser = ArgumentParser()
 parser.add_argument("data_file", type=Path)
 parser.add_argument("num_layers", type=int, choices=model_names.keys(), help="number of model layers")
 parser.add_argument("out_dir", type=Path)
+parser.add_argument("--esm_script", type=Path, default=Path("extract.py"), help="path to extract.py")
 args = parser.parse_args()
 
 out_dir = args.out_dir / "processed" / model_names[args.num_layers] / args.data_file.stem
@@ -31,7 +32,7 @@ with open("tmp.fasta", "w") as f:
 
 launch_script = [
     "python",
-    "extract.py",
+    str(args.esm_script),
     model_names[args.num_layers],
     "tmp.fasta",
     str(out_dir),
