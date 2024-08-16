@@ -1,4 +1,4 @@
-from typing import Literal
+from argparse import Namespace
 
 import lightning.pytorch as pl
 import torch
@@ -13,49 +13,7 @@ from .pooling import GlobalAttentionPooling, MeanPooling
 poolings = {"mean": MeanPooling, "attention": GlobalAttentionPooling}
 
 
-class Model(pl.LightningModule):
-    def __init__(
-        self,
-        hidden_dim: int = 512,
-        pooling: Literal["mean", "attention"] = "attention",
-        dropout: float = 0.5,
-        lr: float = 0.001,
-        reduce_lr_patience: int = 10,
-    ):
-        super().__init__()
-        self.lr = lr
-        self.reduce_lr_parience = reduce_lr_patience
-        self.pooling = pooling
-        self.model = nn.Sequential(
-            nn.LazyLinear(hidden_dim),
-            poolings[pooling](hidden_dim),
-            nn.LazyLinear(hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(p=dropout),
-            nn.LazyLinear(1),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x).squeeze(1)
-
-    def shared_step(self, batch: tuple[torch.Tensor, torch.Tensor], name: str = "train") -> torch.Tensor:
-        x, y = batch
-
-        # compute the prediction
-        y_pred = self.forward(x).float()
-        y = y.float()
-
-        # compute the loss
-        loss = F.mse_loss(y_pred, y)
-
-        # compute and log the metrics
-        self.log(f"{name}/loss", loss)
-        self.log(f"{name}/r2", M.functional.r2_score(y_pred, y))
-        self.log(f"{name}/pearson", M.functional.pearson_corrcoef(y_pred, y))
-        self.log(f"{name}/expvar", M.functional.explained_variance(y_pred, y))
-        self.log(f"{name}/concord", M.functional.concordance_corrcoef(y_pred, y))
-        return loss
-
+class BaseModel(pl.LightningModule):
     def training_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
         return self.shared_step(batch, "train")
 
@@ -66,14 +24,13 @@ class Model(pl.LightningModule):
         return self.shared_step(batch, "test")
 
     def configure_optimizers(self):
-        optimisers = [optim.Adam(self.parameters(), lr=self.lr)]
+        optimisers = [optim.Adam(self.parameters(), lr=self.config.lr)]
         schedulers = [
             {
                 "scheduler": ReduceLROnPlateau(
                     optimisers[0],
-                    factor=0.1,
-                    patience=10,
-                    min_lr=1e-7,
+                    factor=self.config.reduce_lr_factor,
+                    patience=self.config.reduce_lr_patience,
                 ),
                 "monitor": "val/loss",
                 "interval": "epoch",
@@ -81,3 +38,35 @@ class Model(pl.LightningModule):
             }
         ]
         return optimisers, schedulers
+
+
+class RegressionModel(BaseModel):
+    def __init__(
+        self,
+        config: Namespace,
+    ):
+        super().__init__()
+        self.save_hyperparameters()
+        self.model = nn.Sequential(
+            nn.LazyLinear(config.hidden_dim),
+            poolings[config.pooling](config.hidden_dim),
+            nn.LazyLinear(config.hidden_dim),
+            nn.ReLU(),
+            nn.Dropout(p=config.dropout),
+            nn.LazyLinear(1),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.model(x).squeeze(1)
+
+    def shared_step(self, batch: tuple[torch.Tensor, torch.Tensor], name: str = "train") -> torch.Tensor:
+        x, y = batch
+        y_pred = self.forward(x).float()
+        y = y.float()
+        loss = F.mse_loss(y_pred, y)
+        self.log(f"{name}/loss", loss)
+        self.log(f"{name}/r2", M.functional.r2_score(y_pred, y))
+        self.log(f"{name}/pearson", M.functional.pearson_corrcoef(y_pred, y))
+        self.log(f"{name}/expvar", M.functional.explained_variance(y_pred, y))
+        self.log(f"{name}/concord", M.functional.concordance_corrcoef(y_pred, y))
+        return loss
