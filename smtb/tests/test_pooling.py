@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from smtb.model import poolings
+from ..model import poolings
 
 
 @pytest.fixture
