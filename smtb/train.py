@@ -22,7 +22,6 @@ def train(config: argparse.Namespace):
 
     # define the Trainer and it's most important arguments
     trainer = Trainer(
-        devices=-1,
         max_epochs=config.max_epoch,
         callbacks=callbacks,
         logger=logger,
