@@ -3,7 +3,6 @@ lightning
 torchmetrics
 rich
 fair-esm
-jsonargparse
 wandb
 tokenizers
 transformers

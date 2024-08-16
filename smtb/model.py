@@ -14,6 +14,10 @@ poolings = {"mean": MeanPooling, "attention": GlobalAttentionPooling}
 
 
 class BaseModel(pl.LightningModule):
+    """Base model for downstream tasks. This class should be subclassed by specific models.
+    The `shared_step`, `forward` and `__init__` methods should be implemented in the subclasses.
+    """
+
     def __init__(self, config: Namespace):
         super().__init__()
         self.save_hyperparameters()
@@ -50,7 +54,7 @@ class RegressionModel(BaseModel):
         super().__init__(config)
         self.model = nn.Sequential(
             nn.LazyLinear(config.hidden_dim),
-            poolings[config.pooling](config.hidden_dim),
+            poolings[config.pooling](config),
             nn.LazyLinear(config.hidden_dim),
             nn.ReLU(),
             nn.Dropout(p=config.dropout),

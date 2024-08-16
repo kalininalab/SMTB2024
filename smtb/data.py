@@ -7,7 +7,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset
 
 
-def collate_fn(batch: list[tuple[torch.Tensor, float]]):
+def collate_fn(batch: list[tuple[torch.Tensor, float]]) -> tuple[torch.Tensor, torch.Tensor]:
     tensors = [item[0].squeeze(0) for item in batch]
     floats = torch.tensor([item[1] for item in batch])
     padded_sequences = pad_sequence(tensors, batch_first=True, padding_value=0)
@@ -15,6 +15,15 @@ def collate_fn(batch: list[tuple[torch.Tensor, float]]):
 
 
 class DownstreamDataset(Dataset):
+    """Dataset for downstream tasks. The `data_dir` is expected to have the following structure:
+    data_dir
+    ├── df.csv
+    ├── prot_0.pt
+    ├── prot_1.pt
+    ├── ...
+    └── prot_n.pt
+    """
+
     def __init__(self, data_dir: str | Path, layer_num: int):
         self.data_dir = Path(data_dir)
         self.layer_num = layer_num
@@ -29,11 +38,33 @@ class DownstreamDataset(Dataset):
         label = self.df.iloc[idx]["value"]
         return embeddings, label
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.df.shape[0]
 
 
 class DownstreamDataModule(L.LightningDataModule):
+    """DataModule for downstream tasks. The `data_dir` is expected to have the following structure:
+    data_dir
+    ├── train
+    │   ├── df.csv
+    │   ├── prot_0.pt
+    │   ├── prot_1.pt
+    │   ├── ...
+    │   └── prot_n.pt
+    ├── valid
+    │   ├── df.csv
+    │   ├── prot_0.pt
+    │   ├── prot_1.pt
+    │   ├── ...
+    │   └── prot_n.pt
+    └── test
+        ├── df.csv
+        ├── prot_0.pt
+        ├── prot_1.pt
+        ├── ...
+        └── prot_n.pt
+    """
+
     def __init__(self, data_dir: str | Path, layer_num: int, batch_size: int, num_workers: int = 8):
         super().__init__()
         self.data_dir = Path(data_dir)
@@ -41,12 +72,14 @@ class DownstreamDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-    def setup(self, stage=None):
+    def setup(self, stage: str | None = None):
+        """Create train, val, test datasets."""
         self.train = DownstreamDataset(self.data_dir / "train", self.layer_num)
         self.valid = DownstreamDataset(self.data_dir / "valid", self.layer_num)
         self.test = DownstreamDataset(self.data_dir / "test", self.layer_num)
 
     def _get_dataloader(self, dataset: DownstreamDataset, shuffle: bool = False) -> torch.utils.data.DataLoader:
+        """Create a DataLoader for a given dataset."""
         return DataLoader(
             dataset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=shuffle, collate_fn=collate_fn
         )

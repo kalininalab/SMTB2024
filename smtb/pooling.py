@@ -1,10 +1,13 @@
+from argparse import Namespace
+
 import torch
 import torch.nn as nn
 
 
 class BasePooling(nn.Module):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, config: Namespace):
         super().__init__()
+        self.config = config
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Pools the input tensor.
@@ -20,11 +23,11 @@ class BasePooling(nn.Module):
 
 
 class GlobalAttentionPooling(BasePooling):
-    def __init__(self, input_dim: int):
-        super(GlobalAttentionPooling, self).__init__()
+    def __init__(self, config: Namespace):
+        super().__init__(config)
 
-        self.linear_key = nn.Linear(input_dim, 1)  # Project to a single dimension
-        self.linear_query = nn.Linear(input_dim, 1)
+        self.linear_key = nn.Linear(self.config.hidden_dim, 1)  # Project to a single dimension
+        self.linear_query = nn.Linear(self.config.hidden_dim, 1)
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -37,8 +40,8 @@ class GlobalAttentionPooling(BasePooling):
 
 
 class MeanPooling(BasePooling):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__()
+    def __init__(self, config: Namespace):
+        super().__init__(config)
 
     def forward(self, x):
         return x.mean(dim=1)

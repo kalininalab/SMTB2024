@@ -46,9 +46,43 @@ def train_tokenizer(
         case "unigram":
             tokenizer, trainer = _get_tokenizer(Unigram, UnigramTrainer, vocab_size, model_kwargs={})
         case "char":
-            tokenizer, trainer = _get_tokenizer(BPE, BpeTrainer, 26)
-
-    tokenizer.train_from_iterator(iterator=dataset, trainer=trainer)
+            # Char-level tokenization, 5 special tokens and 20 aminoacids
+            tokenizer = Tokenizer(
+                BPE(
+                    vocab={
+                        "[PAD]": 0,
+                        "[MASK]": 1,
+                        "[CLS]": 2,
+                        "[SEP]": 3,
+                        "[UNK]": 4,
+                        "A": 5,
+                        "C": 6,
+                        "D": 7,
+                        "E": 8,
+                        "F": 9,
+                        "G": 10,
+                        "H": 11,
+                        "I": 12,
+                        "K": 13,
+                        "L": 14,
+                        "M": 15,
+                        "N": 16,
+                        "P": 17,
+                        "Q": 18,
+                        "R": 19,
+                        "S": 20,
+                        "T": 21,
+                        "V": 22,
+                        "W": 23,
+                        "Y": 24,
+                    },
+                    merges=[],
+                    unk_token="[UNK]",
+                )
+            )
+    print(tokenizer)
+    if tokenization_type != "char":
+        tokenizer.train_from_iterator(iterator=dataset, trainer=trainer)
     tokenizer_file = str(output_dir / f"{tokenization_type}.json")
     tokenizer.save(tokenizer_file)
     tokenizer = PreTrainedTokenizerFast(tokenizer_file=tokenizer_file)

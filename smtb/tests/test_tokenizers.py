@@ -36,3 +36,11 @@ def test_train_tokenizer(tokenization_type, sample_dataset, tmp_path):
     assert tokenizer.cls_token == "[CLS]"
     assert tokenizer.sep_token == "[SEP]"
     assert tokenizer.unk_token == "[UNK]"
+
+
+def test_char_tokenizer(sample_dataset, tmp_path):
+    output_dir = tmp_path / "tokenization"
+    tokenizer = train_tokenizer(dataset=sample_dataset, tokenization_type="char", output_dir=output_dir)
+    for token in tokenizer.vocab.keys():
+        if token[0] != "[":
+            assert len(token) == 1, f"Token {token} is not a single character"
