@@ -2,6 +2,7 @@ import pytest
 import torch
 
 from ..data import DownstreamDataModule, DownstreamDataset
+from .fixtures import mock_data_dir
 
 
 def test_downstream_dataset(mock_data_dir):

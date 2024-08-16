@@ -3,21 +3,21 @@ from typing import Iterable, Literal
 
 import transformers
 from tokenizers import Tokenizer
-from tokenizers.models import BPE, Model, Unigram, WordPiece
+from tokenizers.models import BPE, Unigram, WordPiece
 from tokenizers.pre_tokenizers import Whitespace
-from tokenizers.trainers import BpeTrainer, Trainer, UnigramTrainer, WordPieceTrainer
+from tokenizers.trainers import BpeTrainer, UnigramTrainer, WordPieceTrainer
 from transformers import PreTrainedTokenizerFast
 
 TOKENIZATION_TYPES = Literal["bpe", "wordpiece", "unigram", "char"]
 
 
 def _get_tokenizer(
-    model: Model,
-    trainer: Trainer,
+    model,
+    trainer,
     vocab_size: int,
     model_kwargs: dict | None = None,
     trainer_kwargs: dict | None = None,
-) -> Tokenizer:
+):
     if model_kwargs is None:
         model_kwargs = dict(unk_token="[UNK]")
     if trainer_kwargs is None:

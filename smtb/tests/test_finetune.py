@@ -19,6 +19,7 @@ import os
 import pytest
 
 from ..train import train
+from .fixtures import mock_data_dir
 
 
 @pytest.fixture
