@@ -9,3 +9,5 @@ transformers
 beartype
 datasets
 transformers[torch]
+pytest
+pytest-cov
