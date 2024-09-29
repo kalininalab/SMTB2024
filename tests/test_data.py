@@ -4,6 +4,7 @@ import pytest
 import torch
 
 from smtb.data import DownstreamDataModule, DownstreamDataset
+
 from .fixtures import mock_data_dir
 
 
