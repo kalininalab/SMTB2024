@@ -3,7 +3,7 @@ from argparse import Namespace
 import pytest
 import torch
 
-from ..model import poolings
+from smtb.model import poolings
 from .fixtures import sample_batch_x, sample_config
 
 

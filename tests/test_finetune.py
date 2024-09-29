@@ -1,6 +1,6 @@
 import os
 
-from ..train import train
+from smtb.train import train
 from .fixtures import mock_data_dir, sample_config
 
 

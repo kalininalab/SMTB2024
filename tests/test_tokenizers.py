@@ -4,7 +4,7 @@ import pytest
 from datasets import Dataset, DatasetDict
 from transformers import PreTrainedTokenizerFast
 
-from ..tokenization import TOKENIZATION_TYPES, train_tokenizer
+from smtb.tokenization import TOKENIZATION_TYPES, train_tokenizer
 
 
 def tokenization_types():

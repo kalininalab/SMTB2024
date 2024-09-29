@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import torch
 
-from ..data import DownstreamDataModule, DownstreamDataset
+from smtb.data import DownstreamDataModule, DownstreamDataset
 from .fixtures import mock_data_dir
 
 

@@ -3,7 +3,7 @@ from argparse import Namespace
 import pytest
 import torch
 
-from ..model import RegressionModel
+from smtb.model import RegressionModel
 from .fixtures import sample_batch_x, sample_config
 
 

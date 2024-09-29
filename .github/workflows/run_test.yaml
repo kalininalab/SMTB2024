@@ -1,6 +1,16 @@
 name: Pytest
 
-on: [push]
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:  # make is manually start-able
 
 jobs:
   build:
