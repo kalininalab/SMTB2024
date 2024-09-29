@@ -4,6 +4,7 @@ import pytest
 import torch
 
 from smtb.model import RegressionModel
+
 from .fixtures import sample_batch_x, sample_config
 
 
