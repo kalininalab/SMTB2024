@@ -1,4 +1,4 @@
-import argparse
+from argparse import Namespace
 from pathlib import Path
 
 import wandb
@@ -10,7 +10,8 @@ from smtb.data import DownstreamDataModule
 from smtb.model import RegressionModel
 
 
-def train(config: argparse.Namespace):
+def train(config: Namespace) -> None:
+    """Train the model."""
     dataset_path = Path(config.dataset_path)
     seed_everything(config.seed)
     logger = WandbLogger()

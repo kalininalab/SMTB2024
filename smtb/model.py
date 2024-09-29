@@ -18,21 +18,31 @@ class BaseModel(pl.LightningModule):
     The `shared_step`, `forward` and `__init__` methods should be implemented in the subclasses.
     """
 
-    def __init__(self, config: Namespace):
+    def __init__(self, config: Namespace) -> None:
+        """Initialize the model."""
         super().__init__()
         self.save_hyperparameters()
         self.config = config
 
     def training_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """Training step."""
         return self.shared_step(batch, "train")
 
     def validation_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """Validation step."""
         return self.shared_step(batch, "val")
 
     def test_step(self, batch: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        """Test step."""
         return self.shared_step(batch, "test")
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> tuple[list[optim.Optimizer], list[dict]]:
+        """
+        Configure the optimisers and schedulers.
+
+        Returns:
+            tuple[list[optim.Optimizer], list[dict]]: The optimisers and schedulers.
+        """
         optimisers = [optim.Adam(self.parameters(), lr=self.config.lr)]
         schedulers = [
             {
@@ -51,6 +61,7 @@ class BaseModel(pl.LightningModule):
 
 class RegressionModel(BaseModel):
     def __init__(self, config: Namespace):
+        """Regression model for downstream tasks."""
         super().__init__(config)
         self.model = nn.Sequential(
             nn.LazyLinear(config.hidden_dim),
@@ -62,9 +73,20 @@ class RegressionModel(BaseModel):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass."""
         return self.model(x).squeeze(1)
 
     def shared_step(self, batch: tuple[torch.Tensor, torch.Tensor], name: str = "train") -> torch.Tensor:
+        """
+        Shared step for training, validation and testing.
+
+        Args:
+            batch (tuple[torch.Tensor, torch.Tensor]): A tuple containing the input and output tensors.
+            name (str, optional): The name of the step. Defaults to "train".
+
+        Returns:
+            torch.Tensor: The loss value.
+        """
         x, y = batch
         y_pred = self.forward(x).float()
         y = y.float()
