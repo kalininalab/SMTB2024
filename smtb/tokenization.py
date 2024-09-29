@@ -3,17 +3,17 @@ from typing import Iterable, Literal
 
 import transformers
 from tokenizers import Tokenizer
-from tokenizers.models import BPE, Unigram, WordPiece, Model
+from tokenizers.models import BPE, Unigram, WordPiece
 from tokenizers.pre_tokenizers import Whitespace
-from tokenizers.trainers import BpeTrainer, UnigramTrainer, WordPieceTrainer, Trainer
+from tokenizers.trainers import BpeTrainer, Trainer, UnigramTrainer, WordPieceTrainer
 from transformers import PreTrainedTokenizerFast
 
 TOKENIZATION_TYPES = Literal["bpe", "wordpiece", "unigram", "char"]
 
 
 def _get_tokenizer(
-    model: Model,
-    trainer: Trainer,
+    model,
+    trainer,
     vocab_size: int,
     model_kwargs: dict | None = None,
     trainer_kwargs: dict | None = None,
@@ -22,8 +22,8 @@ def _get_tokenizer(
     Helper function to get tokenizer and trainer objects.
 
     Args:
-        model (Model): model object to be initialized
-        trainer (Trainer): trainer object to be initialized
+        model: model object to be initialized
+        trainer: trainer object to be initialized
         vocab_size (int): How many tokens to learn
         model_kwargs (dict | None): Arguments to be passed to the model
         trainer_kwargs (dict | None): Arguments to be passed to the trainer
