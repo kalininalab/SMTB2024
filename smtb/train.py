@@ -1,11 +1,11 @@
 from argparse import Namespace
 from pathlib import Path
 
+import wandb
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, RichProgressBar
 from lightning.pytorch.loggers import WandbLogger
 
-import wandb
 from smtb.data import DownstreamDataModule
 from smtb.model import RegressionModel
 
